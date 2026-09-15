@@ -34,13 +34,13 @@ export default function Landing() {
     <div className="overflow-x-hidden">
       {/* ===================== HERO ===================== */}
       <section className="relative">
-        <div className="absolute inset-0 bg-flame-500" />
+        <div className="absolute inset-0 bg-brand" />
         <div className="absolute inset-0 opacity-30 bg-mesh" />
         <div
           className="absolute inset-0 opacity-[0.08]"
           style={{
             backgroundImage:
-              'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.6) 1px, transparent 0)',
+              'radial-gradient(circle at 1px 1px, rgb(var(--panel-fg) / 0.6) 1px, transparent 0)',
             backgroundSize: '24px 24px',
           }}
         />
@@ -51,13 +51,13 @@ export default function Landing() {
             transition={{ duration: 0.6, ease: 'easeOut' }}
             className="max-w-3xl"
           >
-            <span className="inline-flex items-center gap-2 chip bg-white/30 text-flame-900 border-flame-900/30">
+            <span className="inline-flex items-center gap-2 chip bg-surface/30 text-ink border-panel/30">
               <Zap className="w-3.5 h-3.5" /> Prompt Engineering, Quantified
             </span>
-            <h1 className="mt-5 text-5xl sm:text-6xl font-bold tracking-tight text-flame-900 text-balance">
-              Write prompts that <span className="text-flame-900">actually work.</span>
+            <h1 className="mt-5 text-5xl sm:text-6xl font-bold tracking-tight text-ink text-balance">
+              Write prompts that <span className="text-ink">actually work.</span>
             </h1>
-            <p className="mt-5 text-lg text-flame-900 max-w-2xl">
+            <p className="mt-5 text-lg text-ink max-w-2xl">
               Prompt Kaizen scores your prompt against a real-world scenario across 10 parameters,
               points out what's missing, and rewrites it for you — in seconds.
             </p>
@@ -65,15 +65,15 @@ export default function Landing() {
               <Link to="/register" className="btn-cream">
                 Get Started Free <ArrowRight className="w-4 h-4" />
               </Link>
-              <Link to="/login" className="btn-ghost bg-transparent border-flame-900/40 text-flame-900 hover:bg-flame-900/10 hover:border-flame-900/60">
+              <Link to="/login" className="btn-ghost bg-transparent border-panel/40 text-ink hover:bg-panel/10 hover:border-panel/60">
                 I already have an account
               </Link>
             </div>
 
-            <div className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 text-flame-900 text-sm">
-              <span className="inline-flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-flame-900" /> Free forever</span>
-              <span className="inline-flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-flame-900" /> No credit card</span>
-              <span className="inline-flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-flame-900" /> Privacy-first</span>
+            <div className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 text-ink text-sm">
+              <span className="inline-flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-ink" /> Free forever</span>
+              <span className="inline-flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-ink" /> No credit card</span>
+              <span className="inline-flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-ink" /> Privacy-first</span>
             </div>
           </motion.div>
 
@@ -91,19 +91,19 @@ export default function Landing() {
                 </div>
                 <span className="badge-cream">Score 87</span>
               </div>
-              <p className="mt-3 text-[12px] uppercase tracking-wider text-flame-400 font-semibold">Scenario</p>
-              <p className="text-sm text-flame-800 mt-1">
+              <p className="mt-3 text-[12px] uppercase tracking-wider text-brand-text font-semibold">Scenario</p>
+              <p className="text-sm text-ink mt-1">
                 Write a formal email to the Principal requesting permission for an AI workshop.
               </p>
-              <p className="mt-4 text-[12px] uppercase tracking-wider text-flame-400 font-semibold">Your prompt</p>
-              <p className="text-sm text-flame-800 mt-1 italic">"Write an email for AI workshop permission."</p>
+              <p className="mt-4 text-[12px] uppercase tracking-wider text-brand-text font-semibold">Your prompt</p>
+              <p className="text-sm text-ink mt-1 italic">"Write an email for AI workshop permission."</p>
               <div className="mt-4 grid grid-cols-5 gap-1.5">
                 {[10, 6, 0, 12, 8, 7, 8, 3, 4, 5].map((v, i) => {
-                  const cls = v >= 8 ? 'bg-cream-300' : v >= 5 ? 'bg-cream-100' : 'bg-flame-900';
+                  const cls = v >= 8 ? 'bg-surface-sunken' : v >= 5 ? 'bg-surface-sunken' : 'bg-panel';
                   return <div key={i} className={`h-6 rounded-md ${cls}`} title={String(v)} />;
                 })}
               </div>
-              <div className="mt-4 text-[11px] text-flame-400">
+              <div className="mt-4 text-[11px] text-brand-text">
                 Heatmap of 10 prompt parameters · tap any cell for details
               </div>
             </div>
@@ -111,19 +111,19 @@ export default function Landing() {
         </div>
 
         {/* curved transition */}
-        <svg viewBox="0 0 1440 80" className="block w-full text-cream-50" preserveAspectRatio="none">
+        <svg viewBox="0 0 1440 80" className="block w-full text-panel-fg" preserveAspectRatio="none">
           <path d="M0,40 C320,80 720,0 1440,60 L1440,80 L0,80 Z" fill="currentColor" />
         </svg>
       </section>
 
       {/* ===================== FEATURES ===================== */}
-      <section id="features" className="bg-cream-50/60 grid-bg">
+      <section id="features" className="bg-surface/60 grid-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-20">
           <Reveal>
             <div className="text-center mb-12">
               <span className="chip"><Sparkles className="w-3.5 h-3.5" /> What you get</span>
               <h2 className="section-title mt-3">Everything you need to write better prompts</h2>
-              <p className="text-flame-500 mt-2 max-w-xl mx-auto">
+              <p className="text-brand-text mt-2 max-w-xl mx-auto">
                 A complete feedback loop for every prompt you write — from scoring to a one-click rewrite.
               </p>
             </div>
@@ -132,11 +132,11 @@ export default function Landing() {
             {features.map((f, i) => (
               <Reveal key={f.title} delay={i * 0.05}>
                 <div className="card p-6 h-full hover:shadow-[0_18px_50px_-18px_rgba(241,93,35,0.55)] hover:-translate-y-0.5 transition-all duration-300">
-                  <div className="w-11 h-11 rounded-xl bg-flame-500 text-white flex items-center justify-center">
+                  <div className="w-11 h-11 rounded-xl bg-brand text-brand-fg flex items-center justify-center">
                     <f.Icon className="w-5 h-5" strokeWidth={2} />
                   </div>
-                  <h3 className="mt-4 font-semibold text-flame-900">{f.title}</h3>
-                  <p className="text-sm text-flame-500 mt-1 leading-relaxed">{f.desc}</p>
+                  <h3 className="mt-4 font-semibold text-ink">{f.title}</h3>
+                  <p className="text-sm text-brand-text mt-1 leading-relaxed">{f.desc}</p>
                 </div>
               </Reveal>
             ))}
@@ -145,7 +145,7 @@ export default function Landing() {
       </section>
 
       {/* ===================== HOW IT WORKS ===================== */}
-      <section id="how" className="bg-white">
+      <section id="how" className="bg-surface">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-20">
           <Reveal>
             <div className="text-center mb-12">
@@ -158,11 +158,11 @@ export default function Landing() {
               <Reveal key={s.n} delay={i * 0.08}>
                 <div className="relative card p-6 h-full">
                   <span className="absolute -top-3 left-6 badge-flame">Step {s.n}</span>
-                  <div className="w-12 h-12 rounded-xl bg-cream-100 text-flame-900 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-xl bg-surface-sunken text-ink flex items-center justify-center">
                     <s.Icon className="w-6 h-6" strokeWidth={2} />
                   </div>
-                  <h3 className="mt-4 font-semibold text-flame-900">{s.title}</h3>
-                  <p className="text-sm text-flame-500 mt-1 leading-relaxed">{s.desc}</p>
+                  <h3 className="mt-4 font-semibold text-ink">{s.title}</h3>
+                  <p className="text-sm text-brand-text mt-1 leading-relaxed">{s.desc}</p>
                 </div>
               </Reveal>
             ))}
@@ -171,37 +171,37 @@ export default function Landing() {
       </section>
 
       {/* ===================== SCORING ===================== */}
-      <section id="scoring" className="bg-flame-900 text-cream-100">
+      <section id="scoring" className="bg-panel text-panel-fg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-20">
           <Reveal>
             <div className="text-center mb-12">
-              <span className="chip bg-cream-300/10 text-cream-300 border-cream-300/30">
+              <span className="chip bg-surface-sunken/10 text-panel-soft border-line/30">
                 <GaugeCircle className="w-3.5 h-3.5" /> Scoring explained
               </span>
-              <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-cream-100">
+              <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-panel-fg">
                 100-point evaluation across 10 parameters
               </h2>
-              <p className="text-cream-200/70 mt-2">Every prompt gets a transparent, deterministic score.</p>
+              <p className="text-panel-soft/70 mt-2">Every prompt gets a transparent, deterministic score.</p>
             </div>
           </Reveal>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             {scoring.map((s, i) => (
               <Reveal key={s.label} delay={i * 0.04}>
-                <div className="rounded-2xl border border-cream-300/20 bg-flame-800/50 p-4 text-center hover:bg-flame-800 hover:border-cream-300/40 transition">
-                  <p className="text-[11px] uppercase tracking-wider text-cream-200/70">{s.label}</p>
-                  <p className="text-3xl font-bold mt-1 text-cream-300">{s.max}</p>
+                <div className="rounded-2xl border border-line/20 bg-panel/50 p-4 text-center hover:bg-panel hover:border-line/40 transition">
+                  <p className="text-[11px] uppercase tracking-wider text-panel-soft/70">{s.label}</p>
+                  <p className="text-3xl font-bold mt-1 text-panel-soft">{s.max}</p>
                 </div>
               </Reveal>
             ))}
           </div>
           <Reveal delay={0.2}>
-            <div className="mt-12 max-w-2xl mx-auto rounded-2xl border border-cream-300/20 p-6 bg-flame-800/40">
-              <Quote className="w-6 h-6 text-cream-300" />
-              <p className="mt-3 text-cream-100/90 leading-relaxed">
+            <div className="mt-12 max-w-2xl mx-auto rounded-2xl border border-line/20 p-6 bg-panel/40">
+              <Quote className="w-6 h-6 text-panel-soft" />
+              <p className="mt-3 text-panel-fg/90 leading-relaxed">
                 "I stopped guessing why my prompts failed. Prompt Kaizen showed me exactly which
                 parameter I was missing — usually the audience or the format."
               </p>
-              <p className="mt-3 text-sm text-cream-200/60">— a developer who finally writes great prompts</p>
+              <p className="mt-3 text-sm text-panel-soft/60">— a developer who finally writes great prompts</p>
             </div>
           </Reveal>
 
@@ -216,11 +216,11 @@ export default function Landing() {
       </section>
 
       {/* ===================== FOOTER ===================== */}
-      <footer className="bg-cream-50/60 border-t border-flame-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 flex flex-wrap items-center justify-between gap-3 text-sm text-flame-500">
+      <footer className="bg-surface/60 border-t border-line">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 flex flex-wrap items-center justify-between gap-3 text-sm text-brand-text">
           <p>© {new Date().getFullYear()} Prompt Kaizen — Compatibility Analyzer</p>
           <p className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-cream-500" /> Built with privacy in mind
+            <CheckCircle2 className="w-3.5 h-3.5 text-panel-soft" /> Built with privacy in mind
           </p>
         </div>
       </footer>

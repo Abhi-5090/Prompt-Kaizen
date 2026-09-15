@@ -88,13 +88,13 @@ export default function DailyChallengeCalendar({ attempts = [] }) {
       {/* Tight single-line header */}
       <div className="flex items-center justify-between gap-2 mb-2.5">
         <div className="flex items-center gap-1.5 min-w-0">
-          <span className="w-6 h-6 rounded-md bg-cream-100 text-flame-900 flex items-center justify-center shrink-0">
+          <span className="w-6 h-6 rounded-md bg-surface-sunken text-ink flex items-center justify-center shrink-0">
             <CalendarDays className="w-3.5 h-3.5" strokeWidth={2.2} />
           </span>
-          <h3 className="font-semibold text-flame-900 text-xs truncate">Streak</h3>
+          <h3 className="font-semibold text-ink text-xs truncate">Streak</h3>
         </div>
-        <span className="text-[10px] uppercase tracking-wider font-semibold text-flame-900">
-          <span className="text-flame-900">{monthAttempts}</span> / month · <span className="text-flame-900">{attempts.length}</span> total
+        <span className="text-[10px] uppercase tracking-wider font-semibold text-ink">
+          <span className="text-ink">{monthAttempts}</span> / month · <span className="text-ink">{attempts.length}</span> total
         </span>
       </div>
 
@@ -103,17 +103,17 @@ export default function DailyChallengeCalendar({ attempts = [] }) {
         <button
           type="button"
           onClick={() => stepMonth(-1)}
-          className="w-5 h-5 rounded-md text-flame-900 hover:bg-cream-50 transition flex items-center justify-center"
+          className="w-5 h-5 rounded-md text-ink hover:bg-surface transition flex items-center justify-center"
           aria-label="Previous month"
         >
           <ChevronLeft className="w-3 h-3" />
         </button>
-        <p className="text-[11px] font-semibold text-flame-900 tracking-tight">{monthLabel}</p>
+        <p className="text-[11px] font-semibold text-ink tracking-tight">{monthLabel}</p>
         <button
           type="button"
           onClick={() => canStepForward && stepMonth(1)}
           disabled={!canStepForward}
-          className="w-5 h-5 rounded-md text-flame-900 hover:bg-cream-50 transition flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+          className="w-5 h-5 rounded-md text-ink hover:bg-surface transition flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
           aria-label="Next month"
         >
           <ChevronRight className="w-3 h-3" />
@@ -121,7 +121,7 @@ export default function DailyChallengeCalendar({ attempts = [] }) {
       </div>
 
       {/* Weekday header */}
-      <div className="grid grid-cols-7 gap-1 text-[9px] font-semibold text-flame-900 mb-1">
+      <div className="grid grid-cols-7 gap-1 text-[9px] font-semibold text-ink mb-1">
         {DAY_LABELS.map((d, i) => (
           <div key={i} className="text-center uppercase tracking-wider h-3 leading-3">{d}</div>
         ))}
@@ -136,7 +136,7 @@ export default function DailyChallengeCalendar({ attempts = [] }) {
           let classes;
           let content = c.day;
           if (c.attempt) {
-            classes = `${base} bg-flame-500 text-white shadow-soft hover:scale-[1.08]`;
+            classes = `${base} bg-brand text-brand-fg shadow-soft hover:scale-[1.08]`;
             content = (
               <span className="inline-flex items-center gap-0.5">
                 <Flame className="w-2.5 h-2.5" strokeWidth={2.6} />
@@ -144,11 +144,11 @@ export default function DailyChallengeCalendar({ attempts = [] }) {
               </span>
             );
           } else if (c.isToday) {
-            classes = `${base} bg-white border-[1.5px] border-flame-900 text-flame-900`;
+            classes = `${base} bg-surface border-[1.5px] border-panel text-ink`;
           } else if (c.isFuture) {
-            classes = `${base} text-flame-300`;
+            classes = `${base} text-ink-faint`;
           } else {
-            classes = `${base} text-flame-900 bg-cream-50/40 hover:bg-cream-50`;
+            classes = `${base} text-ink bg-surface/40 hover:bg-surface`;
           }
           return (
             <div

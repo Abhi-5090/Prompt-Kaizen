@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { User, Mail, Lock, Loader2, UserPlus, Eye, EyeOff, Sparkles, Check } from 'lucide-react';
@@ -49,7 +49,7 @@ export default function Register() {
   return (
     <div className="min-h-[calc(100vh-4rem)] grid lg:grid-cols-2">
       {/* Left brand panel */}
-      <div className="hidden lg:flex relative items-center justify-center bg-flame-900 text-cream-100 overflow-hidden">
+      <div className="hidden lg:flex relative items-center justify-center bg-panel text-panel-fg overflow-hidden">
         <div className="absolute inset-0 bg-mesh opacity-40" />
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -61,7 +61,7 @@ export default function Register() {
           <h2 className="mt-6 text-3xl font-bold tracking-tight text-balance">
             Start writing prompts the model actually understands.
           </h2>
-          <p className="mt-3 text-cream-200/70 leading-relaxed">
+          <p className="mt-3 text-panel-soft/70 leading-relaxed">
             Sign up free — no credit card. Get instant scoring, a heatmap, suggestions, and
             a one-click improved prompt for every situation.
           </p>
@@ -79,10 +79,10 @@ export default function Register() {
                 transition={{ delay: 0.2 + i * 0.08 }}
                 className="flex items-start gap-3"
               >
-                <span className="mt-0.5 w-5 h-5 rounded-full bg-cream-300 text-flame-900 flex items-center justify-center">
+                <span className="mt-0.5 w-5 h-5 rounded-full bg-surface-sunken text-ink flex items-center justify-center">
                   <Check className="w-3.5 h-3.5" strokeWidth={3} />
                 </span>
-                <span className="text-cream-100/90">{t}</span>
+                <span className="text-panel-fg/90">{t}</span>
               </motion.li>
             ))}
           </ul>
@@ -90,7 +90,7 @@ export default function Register() {
       </div>
 
       {/* Right form */}
-      <div className="flex items-center justify-center px-4 py-10 bg-cream-50/40">
+      <div className="flex items-center justify-center px-4 py-10 bg-surface/40">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -98,12 +98,12 @@ export default function Register() {
           className="w-full max-w-md"
         >
           <div className="card p-8">
-            <div className="flex items-center gap-2 text-flame-700">
-              <Sparkles className="w-4 h-4 text-cream-500" />
+            <div className="flex items-center gap-2 text-ink-soft">
+              <Sparkles className="w-4 h-4 text-panel-soft" />
               <span className="text-xs uppercase tracking-[0.18em] font-semibold">Get started</span>
             </div>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-flame-900">Create your account</h1>
-            <p className="text-sm text-flame-500 mt-1">Start analyzing your prompts in seconds.</p>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink">Create your account</h1>
+            <p className="text-sm text-brand-text mt-1">Start analyzing your prompts in seconds.</p>
 
             <form onSubmit={onSubmit} className="mt-6 space-y-4">
               <Field label="Name" icon={User} name="name" value={form.name} onChange={onChange} placeholder="Your full name" />
@@ -121,7 +121,7 @@ export default function Register() {
                     <button
                       type="button"
                       onClick={() => setShowPass((s) => !s)}
-                      className="text-flame-400 hover:text-flame-900 transition"
+                      className="text-brand-text hover:text-ink transition"
                       aria-label={showPass ? 'Hide password' : 'Show password'}
                     >
                       {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -138,17 +138,17 @@ export default function Register() {
                 />
               </div>
 
-              <ul className="text-xs text-flame-500 space-y-1 pt-1">
+              <ul className="text-xs text-brand-text space-y-1 pt-1">
                 {passRules.map((r) => (
                   <li key={r.label} className="flex items-center gap-2">
                     <span
                       className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors ${
-                        r.valid ? 'bg-cream-300 text-flame-900' : 'bg-flame-50 text-flame-300'
+                        r.valid ? 'bg-surface-sunken text-ink' : 'bg-surface-sunken text-ink-faint'
                       }`}
                     >
                       <Check className="w-3 h-3" strokeWidth={3} />
                     </span>
-                    <span className={r.valid ? 'text-flame-900' : ''}>{r.label}</span>
+                    <span className={r.valid ? 'text-ink' : ''}>{r.label}</span>
                   </li>
                 ))}
               </ul>
@@ -171,9 +171,9 @@ export default function Register() {
               </motion.button>
             </form>
 
-            <p className="mt-6 text-sm text-flame-500 text-center">
+            <p className="mt-6 text-sm text-brand-text text-center">
               Already have an account?{' '}
-              <Link to="/login" className="font-semibold text-flame-900 underline-offset-4 hover:underline">
+              <Link to="/login" className="font-semibold text-ink underline-offset-4 hover:underline">
                 Log in
               </Link>
             </p>
@@ -184,15 +184,21 @@ export default function Register() {
   );
 }
 
-function Field({ label, icon: Icon, trailing, ...inputProps }) {
+function Field({ label, icon: Icon, trailing, id, ...inputProps }) {
+  // The label used to be a plain <label> with no `htmlFor`, and the input had
+  // no `id` — so the text was purely visual and a screen reader announced the
+  // field as an unlabelled "edit text". useId() generates a collision-free id
+  // per instance so the two are properly associated.
+  const generated = useId();
+  const inputId = id || `${generated}-${String(label).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
   return (
     <div>
-      <label className="label">{label}</label>
+      <label className="label" htmlFor={inputId}>{label}</label>
       <div className="relative">
         {Icon ? (
-          <Icon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-flame-300" />
+          <Icon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" aria-hidden="true" />
         ) : null}
-        <input {...inputProps} className={`input ${Icon ? 'pl-9' : ''} ${trailing ? 'pr-9' : ''}`} />
+        <input id={inputId} {...inputProps} className={`input ${Icon ? 'pl-9' : ''} ${trailing ? 'pr-9' : ''}`} />
         {trailing ? (
           <span className="absolute right-3 top-1/2 -translate-y-1/2">{trailing}</span>
         ) : null}

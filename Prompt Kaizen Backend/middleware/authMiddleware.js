@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { istMidnightToday, istDayDiff } = require('../utils/dailyChallenge');
+const { unauthorized, forbidden } = require('../utils/asyncHandler');
 
 const MAX_FREEZES = 3;
 const FREEZE_EARN_EVERY = 7; // earn one freeze every 7-day streak milestone
@@ -97,15 +98,33 @@ const protect = async (req, res, next) => {
   }
 
   if (!token) {
-    return res.status(401).json({ message: 'Not authorized, no token provided' });
+    return next(unauthorized('Not authorized, no token provided'));
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
     if (!user) {
-      return res.status(401).json({ message: 'Not authorized, user not found' });
+      return next(unauthorized('Not authorized, user not found'));
     }
+
+    // Token revocation. `tokenVersion` increments whenever the password
+    // changes (user reset, admin reset), so every token minted before that
+    // point stops working immediately instead of remaining valid for the
+    // rest of its 7-day life. Tokens issued before this field existed carry
+    // no `tv` claim; treat those as version 0 so existing sessions survive
+    // the deploy rather than logging everyone out at once.
+    const tokenVersion = typeof decoded.tv === 'number' ? decoded.tv : 0;
+    if (tokenVersion !== (user.tokenVersion || 0)) {
+      return next(unauthorized('Session expired, please sign in again.'));
+    }
+
+    // A locked account must not be able to keep using a token it obtained
+    // before the lock was applied.
+    if (typeof user.isLocked === 'function' && user.isLocked()) {
+      return next(forbidden('This account is temporarily locked.'));
+    }
+
     req.user = user;
     // Await the streak bump so the very first request of a new IST day shows
     // the freshly-bumped value (previously it returned yesterday's count on
@@ -127,7 +146,7 @@ const protect = async (req, res, next) => {
     }
     next();
   } catch (err) {
-    return res.status(401).json({ message: 'Not authorized, token failed' });
+    return next(unauthorized('Not authorized, token failed'));
   }
 };
 

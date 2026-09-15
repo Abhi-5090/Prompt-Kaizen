@@ -17,15 +17,15 @@ export default function ScoreCard({ title, value, suffix, hint, Icon, variant = 
   // Variants share one rule: value dark for readability, /100 suffix brand
   // orange across all light variants for consistent accent.
   const variants = {
-    light: 'bg-white border-cream-400',
-    flame: 'bg-flame-900 text-cream-100 border-flame-900',
-    cream: 'bg-cream-200 text-flame-900 border-cream-400',
+    light: 'bg-surface border-line',
+    flame: 'bg-panel text-panel-fg border-panel',
+    cream: 'bg-surface-sunken text-ink border-line',
   };
-  const titleClr  = variant === 'flame' ? 'text-cream-300' : 'text-flame-500';
-  const valueClr  = variant === 'flame' ? 'text-cream-100' : 'text-flame-900';
-  const suffixClr = variant === 'flame' ? 'text-cream-300' : 'text-flame-500';
-  const hintClr   = variant === 'flame' ? 'text-cream-300' : 'text-cream-700';
-  const iconBox   = 'bg-flame-500 text-white';
+  const titleClr  = variant === 'flame' ? 'text-panel-soft' : 'text-brand-text';
+  const valueClr  = variant === 'flame' ? 'text-panel-fg' : 'text-ink';
+  const suffixClr = variant === 'flame' ? 'text-panel-soft' : 'text-brand-text';
+  const hintClr   = variant === 'flame' ? 'text-panel-soft' : 'text-ink-muted';
+  const iconBox   = 'bg-brand text-brand-fg';
 
   return (
     <motion.div

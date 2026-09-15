@@ -93,8 +93,52 @@ const SCENARIO_BANK = {
   ],
 };
 
+const crypto = require('crypto');
+
 function pickRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
+}
+
+/**
+ * Stable identifier for a scenario: category plus a hash of its text.
+ *
+ * /analyze used to accept an arbitrary `scenario` string from the client, and
+ * the rule-based score is largely keyword overlap against it — so a caller
+ * could submit a "scenario" identical to their own prompt and score 100. Ids
+ * let the server look the text up in the bank instead of trusting the body.
+ *
+ * Content-derived rather than positional so ids stay stable when scenarios are
+ * added to or reordered within a category.
+ */
+function scenarioId(category, scenario) {
+  const digest = crypto
+    .createHash('sha256')
+    .update(`${category}\u0000${String(scenario).trim()}`)
+    .digest('hex')
+    .slice(0, 12);
+  return digest;
+}
+
+// Built once at load: id -> { category, scenario }.
+const SCENARIO_INDEX = new Map();
+for (const [category, list] of Object.entries(SCENARIO_BANK)) {
+  for (const scenario of list) {
+    SCENARIO_INDEX.set(scenarioId(category, scenario), { category, scenario });
+  }
+}
+
+/** Resolve an id back to its scenario, or null if unknown. */
+function getScenarioById(id) {
+  if (typeof id !== 'string') return null;
+  return SCENARIO_INDEX.get(id) || null;
+}
+
+/**
+ * True when this exact text really is the bank's scenario for that category.
+ * Used to reject forged scenarios on submission.
+ */
+function isKnownScenario(category, scenario) {
+  return SCENARIO_INDEX.has(scenarioId(category, String(scenario).trim()));
 }
 
 function getScenario(category, { exclude } = {}) {
@@ -108,4 +152,12 @@ function listCategories() {
   return Object.keys(SCENARIO_BANK);
 }
 
-module.exports = { SCENARIO_BANK, getScenario, listCategories };
+module.exports = {
+  SCENARIO_BANK,
+  getScenario,
+  listCategories,
+  scenarioId,
+  getScenarioById,
+  isKnownScenario,
+  SCENARIO_INDEX,
+};

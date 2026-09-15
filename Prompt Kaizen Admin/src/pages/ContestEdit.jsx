@@ -123,7 +123,7 @@ export default function ContestEdit() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[40vh] text-flame-500 gap-2 text-sm">
+      <div className="flex items-center justify-center min-h-[40vh] text-brand-text gap-2 text-sm">
         <Loader2 className="w-4 h-4 animate-spin-slow" /> Loading contest…
       </div>
     );
@@ -131,7 +131,7 @@ export default function ContestEdit() {
   if (notFound) {
     return (
       <div className="card p-10 text-center">
-        <p className="font-semibold text-flame-900">Contest not found.</p>
+        <p className="font-semibold text-ink">Contest not found.</p>
         <Link to="/contests" className="btn-ghost mt-3 inline-flex">
           <ArrowLeft className="w-4 h-4" /> Back to contests
         </Link>
@@ -148,18 +148,18 @@ export default function ContestEdit() {
         className="flex flex-wrap items-center justify-between gap-3"
       >
         <div>
-          <Link to={`/contests/${id}`} className="inline-flex items-center gap-1 text-xs uppercase tracking-wider font-semibold text-flame-400 hover:text-flame-900 transition">
+          <Link to={`/contests/${id}`} className="inline-flex items-center gap-1 text-xs uppercase tracking-wider font-semibold text-brand-text hover:text-ink transition">
             <ArrowLeft className="w-3.5 h-3.5" /> Back to contest
           </Link>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-flame-900">Edit Contest</h1>
-          <p className="text-flame-500 text-sm">
+          <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink">Edit Contest</h1>
+          <p className="text-brand-text text-sm">
             Update the contest title, window, or scenarios. The participant allowlist is managed from the contest detail page.
           </p>
         </div>
       </motion.div>
 
       {isClosed && (
-        <div className="card p-4 border-l-4 border-l-flame-500 text-sm text-flame-800">
+        <div className="card p-4 border-l-4 border-l-flame-500 text-sm text-ink">
           This contest is <span className="font-semibold">closed</span>. Closed contests cannot be edited — the server will reject any save.
         </div>
       )}
@@ -167,16 +167,18 @@ export default function ContestEdit() {
       <form onSubmit={onSubmit} className="space-y-5">
         <div className="card p-6 space-y-4">
           <div>
-            <label className="label">Title <span className="text-cream-600">*</span></label>
+            <label className="label" htmlFor="ce-title">Title <span className="text-ink-faint">*</span></label>
             <input
+              id="ce-title"
               value={title} onChange={(e) => setTitle(e.target.value)}
               className="input max-w-lg" placeholder="e.g. Weekly Prompt Test #1"
               disabled={isClosed}
             />
           </div>
           <div>
-            <label className="label">Description</label>
+            <label className="label" htmlFor="ce-description">Description</label>
             <textarea
+              id="ce-description"
               value={description} onChange={(e) => setDescription(e.target.value)}
               className="input min-h-[70px]"
               placeholder="Optional: what this test is about, time expectations, etc."
@@ -185,37 +187,41 @@ export default function ContestEdit() {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label className="label inline-flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5" /> Date (IST) <span className="text-cream-600">*</span>
+              <label className="label inline-flex items-center gap-1.5" htmlFor="ce-date">
+                <Calendar className="w-3.5 h-3.5" /> Date (IST) <span className="text-ink-faint">*</span>
               </label>
               <input
+                id="ce-date"
                 type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)}
                 className="input" disabled={isClosed}
               />
             </div>
             <div>
-              <label className="label inline-flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5" /> Start time (IST) <span className="text-cream-600">*</span>
+              <label className="label inline-flex items-center gap-1.5" htmlFor="ce-start">
+                <Clock className="w-3.5 h-3.5" /> Start time (IST) <span className="text-ink-faint">*</span>
               </label>
               <input
+                id="ce-start"
                 type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)}
                 className="input" disabled={isClosed}
               />
             </div>
             <div>
-              <label className="label inline-flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5" /> End time (IST) <span className="text-cream-600">*</span>
+              <label className="label inline-flex items-center gap-1.5" htmlFor="ce-end">
+                <Clock className="w-3.5 h-3.5" /> End time (IST) <span className="text-ink-faint">*</span>
               </label>
               <input
+                id="ce-end"
                 type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)}
                 className="input" disabled={isClosed}
               />
             </div>
             <div>
-              <label className="label inline-flex items-center gap-1.5">
+              <label className="label inline-flex items-center gap-1.5" htmlFor="ce-duration">
                 <Clock className="w-3.5 h-3.5" /> Per-user limit (min)
               </label>
               <input
+                id="ce-duration"
                 type="number" min={5} max={480} value={durationMinutes}
                 onChange={(e) => setDurationMinutes(Number(e.target.value) || 60)}
                 className="input" disabled={isClosed}
@@ -229,8 +235,8 @@ export default function ContestEdit() {
             <div className="flex items-center gap-2.5">
               <span className="stat-icon"><Trophy className="w-5 h-5" /></span>
               <div>
-                <h3 className="font-semibold text-flame-900">Scenarios</h3>
-                <p className="text-[11px] uppercase tracking-wider text-flame-400 font-semibold">
+                <h3 className="font-semibold text-ink">Scenarios</h3>
+                <p className="text-[11px] uppercase tracking-wider text-brand-text font-semibold">
                   Each is scored out of 100. Final score is the average.
                 </p>
               </div>
@@ -249,22 +255,23 @@ export default function ContestEdit() {
               key={i}
               initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25, delay: i * 0.04 }}
-              className="rounded-xl border border-flame-100 p-4 space-y-3 bg-cream-50/40"
+              className="rounded-xl border border-line p-4 space-y-3 bg-surface/40"
             >
               <div className="flex items-center justify-between">
-                <span className="badge bg-flame-900 text-cream-300">Scenario {i + 1}</span>
+                <span className="badge bg-panel text-panel-soft">Scenario {i + 1}</span>
                 <button
                   type="button" onClick={() => removeScenario(i)}
                   disabled={scenarios.length <= 1 || isClosed}
-                  className="text-xs text-flame-500 hover:text-flame-900 inline-flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="text-xs text-brand-text hover:text-ink inline-flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
                   aria-label="Remove scenario"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Remove
                 </button>
               </div>
               <div>
-                <label className="label">Category <span className="text-cream-600">*</span></label>
+                <label className="label" htmlFor={`ce-cat-${i}`}>Category <span className="text-ink-faint">*</span></label>
                 <select
+                  id={`ce-cat-${i}`}
                   value={s.category}
                   onChange={(e) => updateScenario(i, { category: e.target.value })}
                   className="input" disabled={isClosed}
@@ -274,8 +281,9 @@ export default function ContestEdit() {
                 </select>
               </div>
               <div>
-                <label className="label">Scenario text <span className="text-cream-600">*</span></label>
+                <label className="label" htmlFor={`ce-scen-${i}`}>Scenario text <span className="text-ink-faint">*</span></label>
                 <textarea
+                  id={`ce-scen-${i}`}
                   value={s.scenario}
                   onChange={(e) => updateScenario(i, { scenario: e.target.value })}
                   className="input min-h-[80px]"

@@ -19,12 +19,12 @@ export default function Heatmap({ scores, normalized, title = 'Parameter Heatmap
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-2">
           <span className="stat-icon"><Activity className="w-5 h-5" /></span>
-          <h3 className="font-semibold text-flame-900">{title}</h3>
+          <h3 className="font-semibold text-ink">{title}</h3>
         </div>
-        <div className="flex items-center gap-3 text-[11px] text-flame-500">
-          <LegendDot className="bg-flame-500" label="Strong (≥ 8)" />
-          <LegendDot className="bg-cream-200 ring-1 ring-cream-400" label="Okay (5–7)" />
-          <LegendDot className="bg-flame-900" label="Weak (< 5)" />
+        <div className="flex items-center gap-3 text-[11px] text-brand-text">
+          <LegendDot className="bg-brand" label="Strong (≥ 8)" />
+          <LegendDot className="bg-surface-sunken ring-1 ring-line" label="Okay (5–7)" />
+          <LegendDot className="bg-panel" label="Weak (< 5)" />
         </div>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">

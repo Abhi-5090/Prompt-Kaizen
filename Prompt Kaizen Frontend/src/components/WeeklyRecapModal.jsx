@@ -61,7 +61,7 @@ export default function WeeklyRecapModal() {
         className="fixed inset-0 z-50 flex items-center justify-center px-4"
       >
         <div
-          className="absolute inset-0 bg-flame-900/70 backdrop-blur-sm"
+          className="absolute inset-0 bg-panel/70 backdrop-blur-sm"
           onClick={dismiss}
         />
         <motion.div
@@ -69,36 +69,36 @@ export default function WeeklyRecapModal() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96 }}
           transition={{ duration: 0.28, ease: 'easeOut' }}
-          className="relative w-full max-w-lg rounded-3xl bg-flame-900 text-cream-100 shadow-soft overflow-hidden"
+          className="relative w-full max-w-lg rounded-3xl bg-panel text-panel-fg shadow-soft overflow-hidden"
         >
           <div className="absolute inset-0 bg-mesh opacity-30" />
           <div
             className="absolute inset-0 opacity-[0.08]"
             style={{
               backgroundImage:
-                'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.6) 1px, transparent 0)',
+                'radial-gradient(circle at 1px 1px, rgb(var(--panel-fg) / 0.6) 1px, transparent 0)',
               backgroundSize: '22px 22px',
             }}
           />
           <button
             onClick={dismiss}
             aria-label="Close"
-            className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-flame-800/80 text-cream-200 flex items-center justify-center hover:bg-flame-800 transition"
+            className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-panel/80 text-panel-soft flex items-center justify-center hover:bg-panel transition"
           >
             <X className="w-4 h-4" />
           </button>
 
           <div className="relative p-7">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-cream-300" />
-              <span className="text-[10px] uppercase tracking-[0.22em] text-cream-300/80 font-semibold">
+              <Sparkles className="w-4 h-4 text-panel-soft" />
+              <span className="text-[10px] uppercase tracking-[0.22em] text-panel-soft/80 font-semibold">
                 Your Week, Wrapped
               </span>
             </div>
-            <h2 className="mt-2 text-3xl font-bold text-cream-100 text-balance">
+            <h2 className="mt-2 text-3xl font-bold text-panel-fg text-balance">
               {data.total} {data.total === 1 ? 'prompt' : 'prompts'} · {data.activeDays} active {data.activeDays === 1 ? 'day' : 'days'}
             </h2>
-            <p className="text-cream-200/75 mt-1.5 text-sm">Here's your last 7 days at a glance.</p>
+            <p className="text-panel-soft/75 mt-1.5 text-sm">Here's your last 7 days at a glance.</p>
 
             <div className="mt-5 grid grid-cols-2 gap-3">
               <RecapStat Icon={Trophy}    label="Best score"  value={`${data.best}`}   sub="/ 100" />
@@ -113,8 +113,8 @@ export default function WeeklyRecapModal() {
             </div>
 
             {data.topCategory && (
-              <div className="mt-4 flex items-center gap-2 text-sm text-cream-100">
-                <Layers className="w-4 h-4 text-cream-300" />
+              <div className="mt-4 flex items-center gap-2 text-sm text-panel-fg">
+                <Layers className="w-4 h-4 text-panel-soft" />
                 <span>
                   Most explored: <span className="font-semibold">{data.topCategory}</span>
                 </span>
@@ -125,25 +125,25 @@ export default function WeeklyRecapModal() {
               <Link
                 to={`/prompts/${data.topPrompt._id}`}
                 onClick={dismiss}
-                className="mt-5 block rounded-xl bg-flame-800/70 border border-cream-300/20 p-4 hover:bg-flame-800 transition"
+                className="mt-5 block rounded-xl bg-panel/70 border border-line/20 p-4 hover:bg-panel transition"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-wider text-cream-300/80 font-semibold">
+                    <p className="text-[10px] uppercase tracking-wider text-panel-soft/80 font-semibold">
                       Star prompt of the week
                     </p>
-                    <p className="mt-1 text-sm text-cream-100 truncate">{data.topPrompt.scenario}</p>
+                    <p className="mt-1 text-sm text-panel-fg truncate">{data.topPrompt.scenario}</p>
                   </div>
                   <div className="shrink-0 flex items-center gap-2">
-                    <span className="font-bold text-cream-100 text-lg">{data.topPrompt.overallScore}</span>
-                    <ChevronRight className="w-4 h-4 text-cream-300" />
+                    <span className="font-bold text-panel-fg text-lg">{data.topPrompt.overallScore}</span>
+                    <ChevronRight className="w-4 h-4 text-panel-soft" />
                   </div>
                 </div>
               </Link>
             )}
 
             <div className="mt-6 flex justify-end gap-2">
-              <button onClick={dismiss} className="btn bg-transparent border border-cream-300/30 text-cream-100 hover:bg-cream-300/10">
+              <button onClick={dismiss} className="btn bg-transparent border border-line/30 text-panel-fg hover:bg-surface-sunken/10">
                 Maybe later
               </button>
               <Link to="/analyze" onClick={dismiss} className="btn-cream">
@@ -160,13 +160,13 @@ export default function WeeklyRecapModal() {
 
 function RecapStat({ Icon, label, value, sub }) {
   return (
-    <div className="rounded-xl bg-flame-800/60 border border-cream-300/20 p-3.5">
-      <div className="flex items-center gap-2 text-cream-300/80">
+    <div className="rounded-xl bg-panel/60 border border-line/20 p-3.5">
+      <div className="flex items-center gap-2 text-panel-soft/80">
         <Icon className="w-4 h-4" />
         <span className="text-[10px] uppercase tracking-wider font-semibold">{label}</span>
       </div>
-      <p className="mt-1 text-2xl font-bold text-cream-100">
-        {value} <span className="text-sm font-medium text-cream-200/60">{sub}</span>
+      <p className="mt-1 text-2xl font-bold text-panel-fg">
+        {value} <span className="text-sm font-medium text-panel-soft/60">{sub}</span>
       </p>
     </div>
   );

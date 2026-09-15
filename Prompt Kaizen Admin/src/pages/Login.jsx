@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Loader2, LogIn, Eye, EyeOff, ShieldCheck, KeyRound } from 'lucide-react';
@@ -37,13 +37,13 @@ export default function Login() {
   return (
     <div className="min-h-[calc(100vh-4rem)] grid lg:grid-cols-2">
       {/* Brand panel */}
-      <div className="hidden lg:flex relative items-center justify-center bg-flame-900 text-cream-100 overflow-hidden">
+      <div className="hidden lg:flex relative items-center justify-center bg-panel text-panel-fg overflow-hidden">
         <div className="absolute inset-0 bg-mesh opacity-40" />
         <div
           className="absolute inset-0 opacity-[0.07]"
           style={{
             backgroundImage:
-              'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.6) 1px, transparent 0)',
+              'radial-gradient(circle at 1px 1px, rgb(var(--panel-fg) / 0.6) 1px, transparent 0)',
             backgroundSize: '22px 22px',
           }}
         />
@@ -54,10 +54,10 @@ export default function Login() {
           className="relative max-w-md p-10"
         >
           <Logo size="lg" />
-          <h2 className="mt-6 text-3xl font-bold tracking-tight text-cream-100 text-balance">
+          <h2 className="mt-6 text-3xl font-bold tracking-tight text-panel-fg text-balance">
             Operator console for the Prompt Kaizen platform.
           </h2>
-          <p className="mt-3 text-cream-200/75 leading-relaxed">
+          <p className="mt-3 text-panel-soft/75 leading-relaxed">
             Inspect users, audit prompt evaluations, and watch platform-wide health from one place.
           </p>
           <ul className="mt-8 space-y-3 text-sm">
@@ -73,10 +73,10 @@ export default function Login() {
                 transition={{ delay: 0.2 + i * 0.08 }}
                 className="flex items-start gap-3"
               >
-                <span className="mt-0.5 w-7 h-7 rounded-lg bg-cream-300 text-flame-900 flex items-center justify-center">
+                <span className="mt-0.5 w-7 h-7 rounded-lg bg-surface-sunken text-ink flex items-center justify-center">
                   <t.Icon className="w-4 h-4" />
                 </span>
-                <span className="text-cream-100/90">{t.label}</span>
+                <span className="text-panel-fg/90">{t.label}</span>
               </motion.li>
             ))}
           </ul>
@@ -84,7 +84,7 @@ export default function Login() {
       </div>
 
       {/* Form */}
-      <div className="flex items-center justify-center px-4 py-10 bg-cream-50">
+      <div className="flex items-center justify-center px-4 py-10 bg-surface">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -92,12 +92,12 @@ export default function Login() {
           className="w-full max-w-md"
         >
           <div className="card p-8">
-            <div className="flex items-center gap-2 text-flame-700">
-              <ShieldCheck className="w-4 h-4 text-cream-700" />
+            <div className="flex items-center gap-2 text-ink-soft">
+              <ShieldCheck className="w-4 h-4 text-ink-muted" />
               <span className="text-xs uppercase tracking-[0.18em] font-semibold">Admin sign-in</span>
             </div>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-flame-900">Welcome, operator</h1>
-            <p className="text-sm text-flame-500 mt-1">Restricted access. Admins only.</p>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink">Welcome, operator</h1>
+            <p className="text-sm text-brand-text mt-1">Restricted access. Admins only.</p>
 
             <form onSubmit={onSubmit} className="mt-6 space-y-4">
               <Field
@@ -122,7 +122,7 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={() => setShowPass((s) => !s)}
-                    className="text-flame-400 hover:text-flame-900 transition"
+                    className="text-brand-text hover:text-ink transition"
                     aria-label={showPass ? 'Hide password' : 'Show password'}
                   >
                     {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -144,9 +144,9 @@ export default function Login() {
               </motion.button>
             </form>
 
-            <p className="mt-6 text-xs text-flame-400 text-center">
+            <p className="mt-6 text-xs text-brand-text text-center">
               No admin account? Ask the backend operator to run{' '}
-              <code className="bg-cream-100 text-flame-700 rounded px-1.5 py-0.5">npm run seed:admin</code>.
+              <code className="bg-surface-sunken text-ink-soft rounded px-1.5 py-0.5">npm run seed:admin</code>.
             </p>
           </div>
         </motion.div>
@@ -155,13 +155,17 @@ export default function Login() {
   );
 }
 
-function Field({ label, icon: Icon, trailing, ...inputProps }) {
+function Field({ label, id, icon: Icon, trailing, ...inputProps }) {
+  // Associates the visible label with its input; previously the label was
+  // decorative only and screen readers announced an unlabelled field.
+  const generated = useId();
+  const inputId = id || `${generated}-${String(label).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
   return (
     <div>
-      <label className="label">{label}</label>
+      <label className="label" htmlFor={inputId}>{label}</label>
       <div className="relative">
-        {Icon ? <Icon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-flame-300" /> : null}
-        <input {...inputProps} className={`input ${Icon ? 'pl-9' : ''} ${trailing ? 'pr-9' : ''}`} />
+        {Icon ? <Icon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" /> : null}
+        <input id={inputId} {...inputProps} className={`input ${Icon ? 'pl-9' : ''} ${trailing ? 'pr-9' : ''}`} />
         {trailing ? <span className="absolute right-3 top-1/2 -translate-y-1/2">{trailing}</span> : null}
       </div>
     </div>

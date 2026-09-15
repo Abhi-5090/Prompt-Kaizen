@@ -58,7 +58,7 @@ The product loop is:
 3. The user sees per-parameter scores, a heatmap, suggestions, and an **improved prompt** template they can copy or share as a 1080×1080 PNG.
 4. Streaks, daily challenges, badges, and contests turn the loop into a habit.
 
-The product is **palette-locked** to two anchor colors (`#001413` ink, `#B0E4CC` mint) across the user app, and the same palette is mirrored on the admin app for consistency.
+The product is **palette-locked** to two anchor colors (`#F15D23` brand orange, `#FFFFFF` white surface) with cool grays for text, mirrored across both frontends. See each app's `tailwind.config.js` for the full scale.
 
 ---
 
@@ -820,44 +820,57 @@ All endpoints prefixed `/api`. Protected routes require `Authorization: Bearer <
 
 ## 10. Design System
 
-### 10.1 Locked palette
+### Tokens
 
-```
-ink   #001413  →  dark text, CTAs, app shell
-mint  #B0E4CC  →  accents, badges, highlights
-```
+Colour is defined once in `.design/tokens.css` and synced into both apps at
+`src/styles/tokens.css`. Values are **semantic roles**, not a numeric scale:
 
-Plus pure white and derived shades (50→950 for ink, 50→900 for mint). **No other hues are introduced anywhere** in the user or admin apps.
+| Token | Role |
+|---|---|
+| `--ink`, `--ink-soft`, `--ink-muted`, `--ink-faint` | Text, most to least prominent |
+| `--canvas`, `--surface`, `--surface-raised`, `--surface-sunken` | Page, cards, modals, wells |
+| `--border`, `--border-strong` | Hairlines and emphasised edges |
+| `--brand`, `--brand-hover`, `--brand-fg`, `--brand-text` | Fills, hover, text-on-fill, brand-as-text |
+| `--panel`, `--panel-fg`, `--panel-fg-soft` | Inverted hero blocks |
+| `--positive`, `--warning`, `--danger` | Feedback |
 
-### 10.2 Reusable classes (in `index.css`)
-- `.card`, `.card-hover`
-- `.btn`, `.btn-primary`, `.btn-mint`, `.btn-ghost`, `.btn-danger`
-- `.input`, `.label`
-- `.badge`, `.badge-mint`, `.badge-ink`, `.badge-ghost`, `.chip`
-- `.stat-icon`
-- `.section-title`, `.glass`
+The previous `flame`/`cream` scales were replaced because they were overloaded:
+`flame-400/500/600` were brand orange while `flame-700/900` were greys, and
+**`flame-900` was both the primary text colour and the dark panel background**.
+Those two roles move in opposite directions in a dark theme, so no variable
+swap could satisfy both.
 
-### 10.3 Animation primitives
-- Page-route cross-fade (`AnimatePresence mode="wait"`, opacity-only, 180 ms)
-- Navbar magic-pill (`layoutId="navActive"`)
-- Card hover-lift (`whileHover={{ y: -3 }}`)
-- `animate-pulse-ring` for prominent live elements
-- `animate-spin-slow` for spinners
-- `animate-shimmer` for skeleton loaders
+`--brand` and `--brand-text` are separate for the same reason: the true brand
+orange `#F15D23` scores only **3.32:1** on white, so as body text it failed
+WCAG AA everywhere it appeared. Fills keep the exact brand colour (white on it
+clears 3:1 for large/bold); brand-as-text is deepened to `#C2470F` (5.0:1) in
+light and lifted to `#FF8A5C` (7.6:1) in dark.
 
-### 10.4 Charts
-Recharts customised to the palette:
-- Trend line / area: `stroke="#001413"`, `fill="url(#gradient #B0E4CC opacity .9 → 0)"`
-- Bar charts: gradient ink fills, `radius={[8,8,0,0]}`
-- Tooltip: `background:#001413, color:#B0E4CC`
-- Grid: `#E6F6ED`
+### Theming
 
-### 10.5 Heatmap thresholds
-- `≥ 8/10` → solid mint, dark text
-- `5–7/10` → soft mint
-- `< 5/10` → dark ink, mint text (inverted to read as "needs attention")
+Dark mode is `data-theme="dark"` on `<html>`, set by an inline script in
+`index.html` **before first paint** — applying it from a `useEffect` would show
+every dark-mode user a white flash on each load.
+
+Three states: `light`, `dark`, `system` (default). `system` is a real state that
+follows the OS live, not a synonym for whichever theme is active.
+
+Recharts and react-hot-toast take colour props rather than class names, so they
+read the tokens back off the document via `useChartTheme()` and `ThemedToaster`.
+
+`scripts/verify-theme.cjs` resolves the built CSS and fails CI if any themed
+class stops responding to the theme — the failure mode this approach is most
+prone to, because it breaks silently rather than breaking the build.
+
+### Accessibility
+
+- All text tokens meet WCAG AA (4.5:1) in both themes; `--ink-faint` clears the 3:1 incidental floor.
+- Skip link is first in the tab order; focus moves to `<main>` on route change.
+- `prefers-reduced-motion` disables the Framer Motion transitions.
+- `color-scheme` is set per theme so native scrollbars, form controls and autofill follow.
 
 ---
+
 
 ## 11. Environment & Configuration
 
@@ -908,37 +921,43 @@ flowchart LR
 
 ## 13. Open Items / Future Roadmap
 
-Listed in roughly priority order. None are show-stoppers but each is worth a follow-up:
+### Delivered since this document was first written
 
-### High value
-- **Forgot password / reset flow** — currently impossible to recover an account.
-- **Profile / account settings page** — name, email, password change.
-- **Email verification on signup** — accounts are created instantly.
-- **Pagination** on long tables (Users, Prompts, History, Submissions).
-- **Rate limiting** on `/auth/register` and `/auth/login`.
+These were listed as open and are now implemented — see the referenced tests.
 
-### Operational
-- **Toast notification system** — currently mixed `alert()`, inline banners, and confirms.
-- **Export contest submissions** (CSV) for grading offline.
-- **Admin user management** (promote, suspend, delete).
-- **Audit log** for admin actions.
+| Item | Where |
+|---|---|
+| Email verification on signup | OTP flow, `tests/security.test.js` |
+| Rate limiting on `/auth` | Tiered limiters in `server.js` |
+| Forgot password / reset flow | `tests/password-reset.test.js` |
+| Toast notification system | `react-hot-toast` across both apps |
+| Audit log for admin actions | `models/AuditLog.js` |
+| Anti-cheat: paste detection | `lockClipboard.js` + server-side echo/paste detection |
+| Pagination on long tables | `utils/pagination.js`, `tests/pagination.test.js` |
+| Tests (unit + integration) | `Prompt Kaizen Backend/tests/` — 112 assertions |
+| CI/CD pipeline | `.github/workflows/ci.yml` |
+| Logging beyond morgan | Structured JSON logs + request ids, `middleware/requestContext.js` |
+| Real LLM rewrite | `utils/llmAnalyzer.js`, opt-in via `LLM_ANALYSIS_ENABLED` |
+| Light + dark theming | `.design/tokens.css`, `ThemeContext.jsx`, verified by `scripts/verify-theme.cjs` |
+| Code splitting | Route-level `React.lazy`; entry bundle 921 KB → 388 KB |
+| Error boundaries | `components/ErrorBoundary.jsx`, per-route |
+| Accessibility | Skip link, route focus management, reduced-motion support, AA contrast in both themes |
+| Command palette | Not built — deliberately dropped as low value next to the above |
 
-### Contest power
-- **Per-scenario time limits** within a contest.
-- **Anti-cheat heuristics** — paste detection, tab visibility, autosave.
-- **Email notification** when a contest goes live.
-- **USN-based allowlist** (placeholder for the planned migration from email).
+### Still open
 
-### Polish
-- **Command palette (⌘K)** for power navigation.
-- **Wordle-style emoji result string** for quick share copy.
-- **Real LLM rewrite** (OpenAI / Anthropic / Gemini) as an opt-in improved-prompt source.
+**Product**
+- Profile / account settings page — name, email, password change.
+- Export contest submissions as CSV for offline grading.
+- Per-scenario time limits within a contest.
+- Email notification when a contest goes live.
+- USN-based allowlist (planned migration away from email).
 
-### Production readiness
-- **HTTPS + secure cookies** in production.
-- **Tests** (unit + integration) — none currently.
-- **Logging / monitoring** beyond morgan.
-- **CI/CD pipeline**.
+**Engineering**
+- **Shared package.** `scoreUtils`, the axios setup and the design system are copied between the two frontends. Phase 3 made the design tokens a single source in `.design/` synced into both, but that is a build-time copy, not a real shared package.
+- **Frontend tests.** The backend has coverage; the React apps have none beyond the build and the theme-integrity check.
+- **Scoring calibration.** `scoredBy` distinguishes rule-scored from LLM-scored evaluations, but nothing yet measures agreement between them on real submissions.
+- **Bundle.** The dashboard chunk is still ~420 KB because Recharts is large; a lighter chart library or a partial import would cut it further.
 
 ---
 
@@ -948,7 +967,7 @@ Listed in roughly priority order. None are show-stoppers but each is worth a fol
 |---|---|
 | **IST** | India Standard Time, UTC+5:30, fixed offset (no DST) |
 | **Allowlist** | Set of lowercased email addresses permitted to view/take a contest |
-| **Streak** | Number of consecutive IST days a user has authenticated |
+| **Streak** | Number of consecutive IST days a user has authenticated (boundary is IST midnight) |
 | **Freeze** | A consumable that survives one missed day; auto-earned every 7 streak days, capped at 3 |
 | **Daily Challenge** | A globally identical scenario chosen deterministically per IST day |
 | **Contest** | Admin-scheduled multi-scenario test with a precise IST start/end window and an email allowlist |
@@ -958,4 +977,6 @@ Listed in roughly priority order. None are show-stoppers but each is worth a fol
 
 ---
 
-*Last revised: corresponds to the codebase as of the time this document was generated.*
+*Last revised after Phase 2: security hardening, contest integrity, hybrid LLM scoring,
+pagination, structured logging, CI and deployment configuration. Sections 1–12 describe
+the architecture, which is unchanged; section 13 tracks what has shipped since.*

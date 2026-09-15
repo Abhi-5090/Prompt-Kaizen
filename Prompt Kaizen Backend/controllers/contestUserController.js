@@ -1,7 +1,6 @@
 const Contest = require('../models/Contest');
 const ContestSubmission = require('../models/ContestSubmission');
-const { analyzePrompt } = require('../utils/promptAnalyzer');
-const { generateImprovedPrompt } = require('../utils/generateImprovedPrompt');
+const { evaluatePrompt } = require('../utils/llmAnalyzer');
 const { istDayKey, isSameIstDay } = require('../utils/dailyChallenge');
 
 function userEmail(req) {
@@ -26,6 +25,39 @@ function isLiveNow(contest, now = new Date()) {
   }
   return isSameIstDay(contest.scheduledDate, now);
 }
+
+/**
+ * The instant this user's attempt must be in by: the earlier of the contest
+ * window closing and their personal `durationMinutes` running out from when
+ * they started.
+ *
+ * This used to be computed only in the browser, which meant the per-user
+ * duration was advisory — anyone who ignored the on-screen timer could keep
+ * working until the window itself closed and still submit. The frontend timer
+ * remains for UX; this is the value that actually decides.
+ *
+ * Returns null when neither cap applies (legacy contest, never started).
+ */
+function deadlineFor(contest, submission) {
+  const candidates = [];
+  if (contest.endsAt) candidates.push(new Date(contest.endsAt).getTime());
+  if (submission?.startedAt && contest.durationMinutes) {
+    candidates.push(
+      new Date(submission.startedAt).getTime() + contest.durationMinutes * 60_000
+    );
+  }
+  return candidates.length ? Math.min(...candidates) : null;
+}
+
+// Submissions that arrive a moment after the deadline are accepted rather than
+// discarded — the client auto-submits a few seconds early, and network latency
+// should not cost someone their entire attempt. Anything beyond this is late.
+const SUBMIT_GRACE_MS = 10_000;
+
+// Neither leaderboard aggregation had a $limit: every request built and
+// returned a row for every submission in the collection, then serialised the
+// lot. Capped at a length no leaderboard UI scrolls past.
+const LEADERBOARD_LIMIT = Number(process.env.LEADERBOARD_LIMIT) || 500;
 
 /**
  * Lists contests visible to the calling user, in three buckets:
@@ -96,6 +128,17 @@ const getContestForUser = async (req, res) => {
       userId: req.user._id,
     }).lean();
 
+    const live = isLiveNow(contest);
+    // Scenarios are the exam paper. They used to be returned as soon as a
+    // contest was published, so any allow-listed user could read every
+    // question ahead of time with a single API call and arrive with answers
+    // prepared — the `live` flag in the response was respected by the UI but
+    // not by anything else. They are now withheld until the window opens, and
+    // released again afterwards to whoever already submitted, so results
+    // pages can still show the question next to the answer.
+    const alreadySubmitted = mySubmission?.status === 'submitted';
+    const maySeeScenarios = live || alreadySubmitted;
+
     return res.json({
       contest: {
         _id: contest._id,
@@ -105,10 +148,13 @@ const getContestForUser = async (req, res) => {
         startsAt: contest.startsAt,
         endsAt: contest.endsAt,
         durationMinutes: contest.durationMinutes,
-        scenarios: contest.scenarios,
+        scenarios: maySeeScenarios ? contest.scenarios : [],
+        scenariosCount: (contest.scenarios || []).length,
+        scenariosLocked: !maySeeScenarios,
         status: contest.status,
       },
-      live: isLiveNow(contest),
+      live,
+      deadline: mySubmission ? deadlineFor(contest, mySubmission) : null,
       mySubmission,
     });
   } catch (err) {
@@ -152,7 +198,9 @@ const startContest = async (req, res) => {
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
-    return res.json({ submission: sub });
+    // Hand back the authoritative deadline so the client renders a timer
+    // derived from server state rather than computing its own.
+    return res.json({ submission: sub, deadline: deadlineFor(contest, sub) });
   } catch (err) {
     console.error('startContest error:', err);
     return res.status(500).json({ message: 'Failed to start contest.' });
@@ -184,6 +232,17 @@ const submitContest = async (req, res) => {
     if (existing && existing.status === 'submitted')
       return res.status(409).json({ message: 'You have already submitted this contest.' });
 
+    // Enforce the per-user time limit here, not just in the browser. Without
+    // this, `durationMinutes` was decorative: the client drew a countdown but
+    // a user who ignored it could keep editing until the window closed.
+    const deadline = deadlineFor(contest, existing);
+    if (deadline !== null && Date.now() > deadline + SUBMIT_GRACE_MS) {
+      return res.status(409).json({
+        message: 'Your time for this contest has run out.',
+        deadline,
+      });
+    }
+
     const submitted = Array.isArray(req.body?.answers) ? req.body.answers : [];
     const answers = [];
     for (let i = 0; i < contest.scenarios.length; i++) {
@@ -199,15 +258,12 @@ const submitContest = async (req, res) => {
       };
       let improvedPrompt = '';
       if (userPrompt.length >= 5) {
-        analysis = analyzePrompt({
+        analysis = await evaluatePrompt({
           category: sc.category,
           scenario: sc.scenario,
           userPrompt,
         });
-        improvedPrompt = generateImprovedPrompt({
-          category: sc.category,
-          scenario: sc.scenario,
-        });
+        improvedPrompt = analysis.improvedPrompt;
       }
 
       answers.push({
@@ -372,6 +428,7 @@ const getContestLeaderboard = async (req, res) => {
         },
       },
       { $sort: { score: -1, timeMs: 1 } },
+      { $limit: LEADERBOARD_LIMIT },
     ]);
 
     const callerId = String(req.user?._id || '');
@@ -464,6 +521,7 @@ const leaderboard = async (req, res) => {
       },
       // Primary: highest avg score. Tiebreaker: lowest avg submit time.
       { $sort: { avgScore: -1, avgTimeMs: 1 } },
+      { $limit: LEADERBOARD_LIMIT },
     ]);
 
     const callerId = String(req.user?._id || '');

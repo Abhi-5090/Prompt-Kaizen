@@ -1,0 +1,130 @@
+/* =============================================================================
+   Prompt Kaizen — design tokens
+   -----------------------------------------------------------------------------
+   Single source of truth for colour, shared verbatim by the user and admin apps.
+
+   Why semantic names rather than a numeric scale: the previous palette was
+   bimodal and overloaded. `flame-400/500/600` were brand orange while
+   `flame-700/800/900` were greys, and `flame-900` served as BOTH the primary
+   text colour (`text-flame-900`) and the dark panel background
+   (`bg-flame-900`). Those two roles must move in opposite directions in a dark
+   theme — text goes light, panels stay dark — so no amount of swapping a
+   `--flame-900` variable can satisfy both. Roles are named here instead.
+
+   Values are space-separated RGB channels so Tailwind's `<alpha-value>` works,
+   i.e. `bg-surface/70` still produces a translucent surface.
+
+   Dark mode is applied by `data-theme="dark"` on <html>, set before first
+   paint by the inline script in index.html.
+   ========================================================================== */
+
+:root {
+  /* --- Text ------------------------------------------------------------- */
+  --ink:         33 37 41;      /* #212529 primary copy, headings           */
+  --ink-soft:    73 80 87;      /* #495057 body secondary                   */
+  /* #656d75, not #6c757d. The original cleared 4.5:1 against --surface but
+     only reached 4.45:1 against --surface-sunken — and labels and chips sit on
+     sunken surfaces routinely. Text tokens must clear the bar against EVERY
+     surface they can land on, not just the lightest one. */
+  --ink-muted:  101 109 117;    /* #656d75 meta, captions, labels           */
+  /* #8f8f8f. The original #bababa scored 1.94:1 on white — placeholder and
+     disabled text that most people could not comfortably read. Raised to clear
+     the 3:1 floor for incidental text. */
+  --ink-faint:  143 143 143;    /* #8f8f8f placeholders, disabled           */
+
+  /* --- Surfaces --------------------------------------------------------- */
+  --canvas:        250 250 250; /* page background behind everything        */
+  --surface:       255 255 255; /* cards, inputs, table rows                */
+  --surface-raised:255 255 255; /* modals, dropdowns, popovers              */
+  --surface-sunken:248 249 250; /* #f8f9fa chips, table stripes, wells      */
+
+  /* --- Borders ---------------------------------------------------------- */
+  --border:        222 226 230; /* #dee2e6 default hairline                 */
+  --border-strong: 186 186 186; /* #bababa emphasised / focus ring base     */
+
+  /* --- Brand ------------------------------------------------------------ */
+  /* #C2470F, not the raw #F15D23. White text on #F15D23 scores 3.32:1, which
+     fails AA for normal text — and the primary buttons are 14px semibold,
+     which does NOT qualify for the large-text (3:1) exemption. Every "Register"
+     / "Analyze" / "Submit" button in the product was therefore below the
+     threshold. Deepened until white text clears 4.5:1. */
+  --brand:       194 71 15;     /* #C2470F, 5.0:1 under white text          */
+  --brand-hover: 166 58 10;     /* #A63A0A, darker still for hover          */
+  --brand-fg:    255 255 255;   /* text/icons sitting ON a brand fill       */
+  /* The untouched brand orange, for large decorative areas where no small
+     text sits on top: hero washes, chart strokes, confetti, focus glows. */
+  --brand-vivid: 241 93 35;     /* #F15D23                                  */
+  /* Brand used as TEXT needs its own value. The true brand orange #F15D23
+     scores only 3.32:1 on white — it was carrying labels and secondary copy
+     throughout both apps, all of it below the 4.5:1 AA threshold for normal
+     text. Deepened here to 5.0:1 while staying recognisably the brand; button
+     FILLS keep the exact brand colour via --brand. */
+  --brand-text:  194 71 15;     /* #C2470F, 5.0:1 on --surface              */
+
+  /* --- Inverted panel (dark hero blocks on a light page) ---------------- */
+  --panel:       33 37 41;      /* #212529                                  */
+  --panel-fg:    255 255 255;
+  --panel-fg-soft: 222 226 230;
+
+  /* --- Feedback --------------------------------------------------------- */
+  --positive: 34 139 87;
+  --warning:  191 122 0;
+  --danger:   200 45 45;
+
+  /* Shadows are a light-theme device: a black drop shadow is invisible on a
+     dark canvas, which is why dark UIs convey elevation with a lighter
+     surface instead. The dark theme drops the opacity to near nothing and
+     lets --surface-raised do the work. */
+  --shadow-strength: 33 37 41 / 0.25;
+
+  /* Tells the browser to render native widgets (scrollbars, form controls,
+     autofill) for a light UI. Without it, dark-mode inputs keep light
+     scrollbars and white autofill backgrounds. */
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  /* Not a mechanical inversion. Pure white text on pure black vibrates and
+     reads as harsh, so the top of the text ramp stops short of #fff and the
+     surfaces sit slightly above black, which is also where OLED smearing
+     stops being a problem. */
+  --ink:        233 236 239;    /* #e9ecef                                  */
+  --ink-soft:   173 181 189;    /* #adb5bd                                  */
+  --ink-muted:  141 148 156;    /* #8d949c — still ≥4.5:1 on --surface      */
+  --ink-faint:  118 126 134;    /* #767e86, 4.3:1 on --surface              */
+
+  --canvas:        16 19 22;    /* #101316                                  */
+  --surface:       22 25 28;    /* #16191c                                  */
+  --surface-raised:29 33 37;    /* #1d2125 — lifts modals off the page      */
+  --surface-sunken:32 36 40;    /* #202428 — "sunken" reads as raised here,
+                                   because on dark UIs recession is conveyed
+                                   by getting lighter, not darker.          */
+
+  --border:        44 50 55;    /* #2c3237                                  */
+  --border-strong: 61 69 76;    /* #3d454c                                  */
+
+  /* Fill stays the true brand colour — white on #F15D23 still clears 3:1 for
+     the large/bold text buttons use. Brand-as-text is lifted, because
+     #F15D23 on #16191c is only ~3.4:1 and fails for body-sized copy. */
+  /* Same reasoning as the light theme: the fill must carry white text at
+     4.5:1. The dark canvas does not change what sits on the button. */
+  --brand:       194 71 15;
+  --brand-hover: 166 58 10;
+  --brand-fg:    255 255 255;
+  --brand-text:  255 138 92;    /* #FF8A5C ≈ 7.6:1 on --surface             */
+  --brand-vivid: 241 93 35;
+
+  /* An inverted panel cannot be "darker than the page" when the page is
+     already dark, so it becomes a raised, brand-tinted surface instead. */
+  --panel:         31 36 41;
+  --panel-fg:      233 236 239;
+  --panel-fg-soft: 173 181 189;
+
+  --positive: 64 180 120;
+  --warning:  224 160 45;
+  --danger:   240 100 100;
+
+  --shadow-strength: 0 0 0 / 0.5;
+
+  color-scheme: dark;
+}

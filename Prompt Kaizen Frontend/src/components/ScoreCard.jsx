@@ -19,19 +19,19 @@ export default function ScoreCard({ title, value, suffix, hint, Icon, variant = 
   }, [value, numeric, delay, mv]);
 
   const variants = {
-    light: 'bg-white border-flame-50',
-    flame: 'bg-flame-900 text-cream-100 border-flame-800',
-    cream: 'bg-cream-300 text-flame-900 border-cream-400',
+    light: 'bg-surface border-line',
+    flame: 'bg-panel text-panel-fg border-panel',
+    cream: 'bg-surface-sunken text-ink border-line',
   };
-  const titleClr  = variant === 'flame' ? 'text-cream-300/80' : 'text-flame-500';
-  const valueClr  = variant === 'flame' ? 'text-cream-100' : 'text-flame-900';
-  const suffixClr = variant === 'flame' ? 'text-white' : 'text-flame-500';
-  const hintClr   = variant === 'flame' ? 'text-cream-200/60' : variant === 'cream' ? 'text-flame-700/70' : 'text-flame-400';
+  const titleClr  = variant === 'flame' ? 'text-panel-soft/80' : 'text-brand-text';
+  const valueClr  = variant === 'flame' ? 'text-panel-fg' : 'text-ink';
+  const suffixClr = variant === 'flame' ? 'text-brand-fg' : 'text-brand-text';
+  const hintClr   = variant === 'flame' ? 'text-panel-soft/60' : variant === 'cream' ? 'text-ink-soft/70' : 'text-brand-text';
   const iconBox  = variant === 'flame'
-    ? 'bg-flame-800 text-cream-300'
+    ? 'bg-panel text-panel-soft'
     : variant === 'cream'
-      ? 'bg-flame-900 text-cream-300'
-      : 'bg-cream-100 text-flame-900';
+      ? 'bg-panel text-panel-soft'
+      : 'bg-surface-sunken text-ink';
 
   return (
     <motion.div

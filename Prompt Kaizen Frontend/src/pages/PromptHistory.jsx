@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -7,38 +7,36 @@ import {
 import toast from 'react-hot-toast';
 import api from '../api/axiosInstance.js';
 import { ratingBadgeClass } from '../utils/scoreUtils.js';
+import { usePaginatedList } from '../utils/usePaginatedList.js';
+import Pagination from '../components/Pagination.jsx';
+
+const CATEGORIES = [
+  'Academic Writing','Email Writing','Resume and LinkedIn','Coding and Debugging',
+  'Data Analysis','Business Communication','Interview Preparation','Research and Summarization',
+  'Content Creation','Social Media Post','Image Generation Prompt','Other',
+];
 
 export default function PromptHistory() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [q, setQ] = useState('');
   const [category, setCategory] = useState('');
 
-  const load = () => {
-    setLoading(true);
-    api.get('/prompts/history')
-      .then((res) => setItems(res.data.items || []))
-      .catch((e) => toast.error(e?.response?.data?.message || 'Failed to load history.'))
-      .finally(() => setLoading(false));
-  };
-  useEffect(load, []);
+  // Server-side paging and search. The page previously pulled the caller's
+  // most recent 500 evaluations and filtered them in the browser, so a heavy
+  // user's older prompts were unreachable and unsearchable.
+  const {
+    items, pagination, loading, error,
+    page, setPage, search: q, setSearch: setQ, removeLocal,
+  } = usePaginatedList('/prompts/history', {
+    limit: 20,
+    extraParams: category ? { category } : {},
+  });
 
-  const categories = useMemo(
-    () => Array.from(new Set(items.map((i) => i.category))).sort(),
-    [items]
-  );
+  const filtered = items;
 
-  const filtered = useMemo(() => {
-    const query = q.trim().toLowerCase();
-    return items.filter((i) => {
-      if (category && i.category !== category) return false;
-      if (!query) return true;
-      return (
-        (i.scenario || '').toLowerCase().includes(query) ||
-        (i.userPrompt || '').toLowerCase().includes(query)
-      );
-    });
-  }, [items, q, category]);
+  // Category options come from the fixed analyzer list rather than from the
+  // rows on screen — deriving them from one page would hide categories the
+  // user has used but that do not appear on the current page.
+  const categories = CATEGORIES;
+
 
   return (
     <div className="space-y-6">
@@ -48,8 +46,8 @@ export default function PromptHistory() {
       >
         <div>
           <span className="chip"><History className="w-3.5 h-3.5" /> Prompt history</span>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-flame-900">All your evaluations</h1>
-          <p className="text-flame-500 text-sm">Search, filter, and review what you've written before.</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink">All your evaluations</h1>
+          <p className="text-brand-text text-sm">Search, filter, and review what you've written before.</p>
         </div>
         <Link to="/analyze" className="btn-primary">
           <PlusCircle className="w-4 h-4" /> New Analysis
@@ -59,22 +57,28 @@ export default function PromptHistory() {
       {/* Filters */}
       <div className="card p-3 flex flex-wrap gap-2 items-center">
         <div className="relative flex-1 min-w-[220px]">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-flame-300" />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
+            type="search"
+            aria-label="Search your history by scenario or prompt"
             placeholder="Search scenario or prompt..."
             className="input pl-9"
           />
         </div>
         <div className="relative">
-          <Filter className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-flame-300" />
-          <select value={category} onChange={(e) => setCategory(e.target.value)} className="input pl-9 min-w-[200px]">
+          <Filter className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
+          <select
+            aria-label="Filter by category"
+            value={category} onChange={(e) => setCategory(e.target.value)}
+            className="input pl-9 min-w-[200px]"
+          >
             <option value="">All categories</option>
             {categories.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
-        <span className="badge-ghost ml-auto">{filtered.length} {filtered.length === 1 ? 'item' : 'items'}</span>
+        <span className="badge-ghost ml-auto">{pagination.total.toLocaleString()} {pagination.total === 1 ? 'item' : 'items'}</span>
       </div>
 
       {/* List */}
@@ -83,17 +87,17 @@ export default function PromptHistory() {
           <div className="p-6">
             <div className="space-y-2 animate-pulse">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-12 rounded-xl bg-cream-50/60" />
+                <div key={i} className="h-12 rounded-xl bg-surface/60" />
               ))}
             </div>
           </div>
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center">
-            <div className="mx-auto w-12 h-12 rounded-2xl bg-cream-100 text-flame-900 flex items-center justify-center">
+            <div className="mx-auto w-12 h-12 rounded-2xl bg-surface-sunken text-ink flex items-center justify-center">
               <Inbox className="w-6 h-6" />
             </div>
-            <p className="mt-3 font-semibold text-flame-900">Nothing here yet</p>
-            <p className="text-sm text-flame-500 mt-1">
+            <p className="mt-3 font-semibold text-ink">Nothing here yet</p>
+            <p className="text-sm text-brand-text mt-1">
               {items.length === 0 ? 'Analyze your first prompt to get started.' : 'No prompts match your filters.'}
             </p>
             {items.length === 0 && (
@@ -106,7 +110,7 @@ export default function PromptHistory() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-flame-400 border-b border-flame-50 bg-cream-50/40">
+                <tr className="text-left text-brand-text border-b border-line bg-surface/40">
                   <th className="py-2 px-4 text-[11px] uppercase tracking-wider font-semibold">Date</th>
                   <th className="py-2 px-4 text-[11px] uppercase tracking-wider font-semibold">Category</th>
                   <th className="py-2 px-4 text-[11px] uppercase tracking-wider font-semibold">Scenario</th>
@@ -123,37 +127,37 @@ export default function PromptHistory() {
                     <motion.tr
                       key={r._id}
                       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, delay: i * 0.02 }}
-                      className={`border-b border-flame-50/60 transition ${
+                      className={`border-b border-line/60 transition ${
                         isChallenge
-                          ? 'bg-cream-100/60 hover:bg-cream-200/70'
-                          : 'hover:bg-cream-50/40'
+                          ? 'bg-surface-sunken/60 hover:bg-surface-sunken/70'
+                          : 'hover:bg-surface/40'
                       }`}
                     >
                       <td
                         className={`py-2.5 px-4 whitespace-nowrap ${
                           isChallenge
-                            ? 'text-flame-800 font-semibold relative'
-                            : 'text-flame-500'
+                            ? 'text-ink font-semibold relative'
+                            : 'text-brand-text'
                         }`}
                       >
                         {/* Left accent stripe — uses box-shadow so it doesn't shift the layout. */}
                         {isChallenge && (
                           <span
                             aria-hidden
-                            className="absolute left-0 top-0 bottom-0 w-1 bg-flame-900"
+                            className="absolute left-0 top-0 bottom-0 w-1 bg-panel"
                           />
                         )}
                         <span className="inline-flex items-center gap-1.5">
-                          {isChallenge && <Calendar className="w-3.5 h-3.5 text-flame-900" />}
+                          {isChallenge && <Calendar className="w-3.5 h-3.5 text-ink" />}
                           {new Date(r.createdAt).toLocaleDateString()}
                         </span>
                       </td>
-                      <td className="py-2.5 px-4 text-flame-800">
+                      <td className="py-2.5 px-4 text-ink">
                         <span className="inline-flex items-center gap-2 flex-wrap">
                           <span>{r.category}</span>
                           {isChallenge && (
                             <span
-                              className="badge bg-flame-900 text-cream-300"
+                              className="badge bg-panel text-panel-soft"
                               title="Submitted via the Daily Challenge"
                             >
                               <Calendar className="w-3 h-3" /> Challenge
@@ -161,9 +165,9 @@ export default function PromptHistory() {
                           )}
                         </span>
                       </td>
-                      <td className="py-2.5 px-4 max-w-xs truncate text-flame-700" title={r.scenario}>{r.scenario}</td>
-                      <td className="py-2.5 px-4 max-w-xs truncate text-flame-500" title={r.userPrompt}>{r.userPrompt}</td>
-                      <td className="py-2.5 px-4 font-bold text-flame-900">{r.overallScore}</td>
+                      <td className="py-2.5 px-4 max-w-xs truncate text-ink-soft" title={r.scenario}>{r.scenario}</td>
+                      <td className="py-2.5 px-4 max-w-xs truncate text-brand-text" title={r.userPrompt}>{r.userPrompt}</td>
+                      <td className="py-2.5 px-4 font-bold text-ink">{r.overallScore}</td>
                       <td className="py-2.5 px-4 whitespace-nowrap">
                         <span className={`badge ${ratingBadgeClass(r.rating)} whitespace-nowrap`}>
                           {r.rating || 'Unrated'}
@@ -181,6 +185,12 @@ export default function PromptHistory() {
             </table>
           </div>
         )}
+
+        {error && !loading && (
+          <p className="mt-4 text-sm text-brand-text" role="alert">{error}</p>
+        )}
+
+        <Pagination pagination={pagination} onPage={setPage} loading={loading} />
       </div>
     </div>
   );

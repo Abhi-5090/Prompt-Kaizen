@@ -8,6 +8,7 @@ import {
 import toast from 'react-hot-toast';
 import api from '../api/axiosInstance.js';
 import { lockClipboardProps } from '../utils/lockClipboard.js';
+import { useDialog } from '../components/Dialog.jsx';
 import { ratingBadgeClass } from '../utils/scoreUtils.js';
 
 // Auto-submit a few seconds before the wall-clock deadline so the request
@@ -17,6 +18,7 @@ const AUTO_SUBMIT_BUFFER_MS = 3000;
 export default function ContestTake() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const dialog = useDialog();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState({});
@@ -58,11 +60,22 @@ export default function ContestTake() {
     if (!data?.live || data?.mySubmission?.status === 'submitted' || startedRef.current) return;
     startedRef.current = true;
     api.post(`/contests/${id}/start`).catch(() => {});
-  }, [data, id]);
+  }, [data, id, dialog]);
 
   const submitNow = useCallback(async ({ silent } = {}) => {
     if (!data) return;
-    if (!silent && !confirm('Submit your contest? This cannot be undone.')) return;
+    // In-app dialog rather than window.confirm: native dialogs are blocked or
+    // silently auto-dismissed in some embedded webviews, which on a timed
+    // contest would look like the Submit button simply not working.
+    if (!silent) {
+      const ok = await dialog.confirm({
+        title: 'Submit your contest?',
+        message: 'Your answers will be scored and locked. This cannot be undone.',
+        confirmLabel: 'Submit',
+        destructive: true,
+      });
+      if (!ok) return;
+    }
     try {
       setSubmitting(true);
       const payload = {
@@ -106,7 +119,7 @@ export default function ContestTake() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[40vh] text-flame-500 gap-2 text-sm">
+      <div className="flex items-center justify-center min-h-[40vh] text-brand-text gap-2 text-sm">
         <Loader2 className="w-4 h-4 animate-spin-slow" /> Loading contest…
       </div>
     );
@@ -130,7 +143,7 @@ export default function ContestTake() {
   }
   if (submitted && !result) {
     return (
-      <div className="flex items-center justify-center min-h-[40vh] text-flame-500 gap-2 text-sm">
+      <div className="flex items-center justify-center min-h-[40vh] text-brand-text gap-2 text-sm">
         <Loader2 className="w-4 h-4 animate-spin-slow" /> Loading your result…
       </div>
     );
@@ -172,11 +185,11 @@ export default function ContestTake() {
         className="flex flex-wrap items-center justify-between gap-3"
       >
         <div>
-          <Link to="/contests" className="inline-flex items-center gap-1 text-xs uppercase tracking-wider font-semibold text-flame-400 hover:text-flame-900 transition">
+          <Link to="/contests" className="inline-flex items-center gap-1 text-xs uppercase tracking-wider font-semibold text-brand-text hover:text-ink transition">
             <ArrowLeft className="w-3.5 h-3.5" /> Back to contests
           </Link>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-flame-900">{contest.title}</h1>
-          <p className="text-flame-500 text-sm flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink">{contest.title}</h1>
+          <p className="text-brand-text text-sm flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="inline-flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5" />
               {new Date(contest.scheduledDate).toLocaleDateString(undefined, {
@@ -203,8 +216,8 @@ export default function ContestTake() {
       </motion.div>
 
       {timeUp && !result && (
-        <div className="flex items-start gap-2 rounded-xl bg-flame-900 border border-flame-800 text-cream-100 px-3 py-2 text-sm">
-          <TimerReset className="w-4 h-4 mt-0.5 text-cream-300" />
+        <div className="flex items-start gap-2 rounded-xl bg-panel border border-panel text-panel-fg px-3 py-2 text-sm">
+          <TimerReset className="w-4 h-4 mt-0.5 text-panel-soft" />
           <span>Time's up — submitting your current answers…</span>
         </div>
       )}
@@ -221,10 +234,10 @@ export default function ContestTake() {
               onClick={() => setCurrentIdx(i)}
               className={`w-9 h-9 rounded-lg text-sm font-semibold transition flex items-center justify-center ${
                 isCurrent
-                  ? 'bg-flame-900 text-cream-100 shadow-soft'
+                  ? 'bg-panel text-panel-fg shadow-soft'
                   : isAnswered
-                    ? 'bg-cream-300 text-flame-900'
-                    : 'bg-white border border-flame-100 text-flame-700 hover:bg-cream-50'
+                    ? 'bg-surface-sunken text-ink'
+                    : 'bg-surface border border-line text-ink-soft hover:bg-surface'
               }`}
               aria-label={`Scenario ${i + 1}`}
             >
@@ -239,17 +252,17 @@ export default function ContestTake() {
       <motion.div
         key={currentIdx}
         initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}
-        className="rounded-2xl bg-flame-900 text-cream-100 p-6 shadow-soft relative overflow-hidden"
+        className="rounded-2xl bg-panel text-panel-fg p-6 shadow-soft relative overflow-hidden"
       >
         <div className="absolute inset-0 bg-mesh opacity-25" />
         <div className="relative">
           <div className="flex flex-wrap items-center gap-2 mb-3">
-            <span className="chip bg-cream-300/10 text-cream-300 border-cream-300/30">
+            <span className="chip bg-surface-sunken/10 text-panel-soft border-line/30">
               <Sparkles className="w-3.5 h-3.5" /> Scenario {currentIdx + 1} of {scenarios.length}
             </span>
-            <span className="badge bg-white text-flame-900">{currentScenario.category}</span>
+            <span className="badge bg-surface text-ink">{currentScenario.category}</span>
           </div>
-          <p className="text-[17px] leading-relaxed text-cream-100/95 whitespace-pre-wrap">
+          <p className="text-[17px] leading-relaxed text-panel-fg/95 whitespace-pre-wrap">
             {currentScenario.scenario}
           </p>
         </div>
@@ -259,7 +272,7 @@ export default function ContestTake() {
       <div className="card p-6">
         <div className="flex items-center justify-between mb-2">
           <label className="label !mb-0">Your Prompt</label>
-          <span className="text-[11px] uppercase tracking-wider text-flame-400 font-semibold">
+          <span className="text-[11px] uppercase tracking-wider text-brand-text font-semibold">
             {(answers[currentIdx] || '').trim().split(/\s+/).filter(Boolean).length} words
           </span>
         </div>
@@ -360,14 +373,14 @@ function ContestTimer({ deadline, onExpire, paused }) {
   const low = !expired && !critical && ms < 5 * 60_000;
 
   const baseClasses = expired
-    ? 'bg-flame-900 text-cream-200 border-flame-800'
+    ? 'bg-panel text-panel-soft border-panel'
     : critical
-      ? 'bg-flame-900 text-cream-300 border-flame-700 animate-pulse-ring'
+      ? 'bg-panel text-panel-soft border-panel animate-pulse-ring'
       : low
-        ? 'bg-flame-900 text-cream-100 border-flame-800'
-        : 'bg-white/95 text-flame-900 border-flame-100';
+        ? 'bg-panel text-panel-fg border-panel'
+        : 'bg-surface/95 text-ink border-line';
 
-  const iconClasses = expired || low || critical ? 'text-cream-300' : 'text-flame-700';
+  const iconClasses = expired || low || critical ? 'text-panel-soft' : 'text-ink-soft';
 
   return (
     <motion.div
@@ -382,7 +395,7 @@ function ContestTimer({ deadline, onExpire, paused }) {
       <div className="flex items-center gap-2.5">
         <Clock className={`w-4 h-4 shrink-0 ${iconClasses}`} strokeWidth={2.4} />
         <div className="leading-none">
-          <p className={`text-[9px] uppercase tracking-[0.2em] font-semibold ${expired || low || critical ? 'opacity-75' : 'text-flame-400'}`}>
+          <p className={`text-[9px] uppercase tracking-[0.2em] font-semibold ${expired || low || critical ? 'opacity-75' : 'text-brand-text'}`}>
             {expired ? "Time's up" : critical ? 'Almost out!' : 'Time left'}
           </p>
           <p className="text-xl font-bold tabular-nums mt-1">{display}</p>
@@ -409,19 +422,19 @@ function NotLiveBanner({ contest }) {
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/contests" className="inline-flex items-center gap-1 text-xs uppercase tracking-wider font-semibold text-flame-400 hover:text-flame-900 transition">
+        <Link to="/contests" className="inline-flex items-center gap-1 text-xs uppercase tracking-wider font-semibold text-brand-text hover:text-ink transition">
           <ArrowLeft className="w-3.5 h-3.5" /> Back to contests
         </Link>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-flame-900">{contest.title}</h1>
+        <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink">{contest.title}</h1>
       </div>
       <div className="card p-8 text-center">
-        <div className="mx-auto w-12 h-12 rounded-2xl bg-cream-100 text-flame-900 flex items-center justify-center">
+        <div className="mx-auto w-12 h-12 rounded-2xl bg-surface-sunken text-ink flex items-center justify-center">
           <Calendar className="w-6 h-6" />
         </div>
-        <p className="mt-3 font-semibold text-flame-900">
+        <p className="mt-3 font-semibold text-ink">
           {isFuture ? 'This contest hasn\'t opened yet.' : 'This contest window has closed.'}
         </p>
-        <p className="text-sm text-flame-500 mt-1">{message}</p>
+        <p className="text-sm text-brand-text mt-1">{message}</p>
       </div>
     </div>
   );
@@ -433,11 +446,11 @@ function ContestResult({ result }) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link to="/contests" className="inline-flex items-center gap-1 text-xs uppercase tracking-wider font-semibold text-flame-400 hover:text-flame-900 transition">
+          <Link to="/contests" className="inline-flex items-center gap-1 text-xs uppercase tracking-wider font-semibold text-brand-text hover:text-ink transition">
             <ArrowLeft className="w-3.5 h-3.5" /> Back to contests
           </Link>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-flame-900">{contest.title}</h1>
-          <p className="text-flame-500 text-sm">Your contest result</p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink">{contest.title}</h1>
+          <p className="text-brand-text text-sm">Your contest result</p>
         </div>
       </div>
 
@@ -446,15 +459,15 @@ function ContestResult({ result }) {
         className="card p-6 flex flex-wrap items-center gap-6"
       >
         <div className="relative">
-          <div className="w-24 h-24 rounded-full bg-flame-900 text-cream-300 flex items-center justify-center text-3xl font-bold shadow-soft">
+          <div className="w-24 h-24 rounded-full bg-panel text-panel-soft flex items-center justify-center text-3xl font-bold shadow-soft">
             {submission.averageScore}
           </div>
           <div className="absolute -inset-1 rounded-full animate-pulse-ring pointer-events-none" />
         </div>
         <div>
-          <p className="text-[11px] uppercase tracking-wider text-flame-400 font-semibold">Average score</p>
-          <p className="mt-1 text-2xl font-bold text-flame-900">{submission.averageScore} / 100</p>
-          <p className="text-sm text-flame-500 mt-1">
+          <p className="text-[11px] uppercase tracking-wider text-brand-text font-semibold">Average score</p>
+          <p className="mt-1 text-2xl font-bold text-ink">{submission.averageScore} / 100</p>
+          <p className="text-sm text-brand-text mt-1">
             Across {submission.answers?.length || 0} scenarios · submitted{' '}
             {submission.submittedAt ? new Date(submission.submittedAt).toLocaleString() : ''}
           </p>
@@ -472,25 +485,25 @@ function ContestResult({ result }) {
               className="card p-5"
             >
               <div className="flex items-center gap-2 mb-3 flex-wrap">
-                <span className="badge bg-flame-900 text-cream-300">Q{a.scenarioIndex + 1}</span>
-                {scenario ? <span className="badge bg-cream-100 text-flame-800 border border-cream-200">{scenario.category}</span> : null}
+                <span className="badge bg-panel text-panel-soft">Q{a.scenarioIndex + 1}</span>
+                {scenario ? <span className="badge bg-surface-sunken text-ink border border-line">{scenario.category}</span> : null}
                 <span className={`badge ${ratingBadgeClass(a.rating)}`}>{a.rating || 'Unrated'}</span>
-                <span className="ml-auto font-bold text-flame-900 tabular-nums">
-                  {a.overallScore}<span className="text-flame-400 text-sm">/100</span>
+                <span className="ml-auto font-bold text-ink tabular-nums">
+                  {a.overallScore}<span className="text-brand-text text-sm">/100</span>
                 </span>
               </div>
               {scenario ? (
-                <p className="text-sm text-flame-700 mb-3">
-                  <span className="text-[11px] uppercase tracking-wider text-flame-400 font-semibold mr-2">Scenario</span>
+                <p className="text-sm text-ink-soft mb-3">
+                  <span className="text-[11px] uppercase tracking-wider text-brand-text font-semibold mr-2">Scenario</span>
                   {scenario.scenario}
                 </p>
               ) : null}
-              <div className="rounded-xl bg-cream-50/60 border border-cream-200 p-3 text-sm whitespace-pre-wrap font-mono text-[12px] text-flame-800">
+              <div className="rounded-xl bg-surface/60 border border-line p-3 text-sm whitespace-pre-wrap font-mono text-[12px] text-ink">
                 {a.userPrompt || '(no answer)'}
               </div>
               {a.suggestions?.length ? (
-                <details className="mt-3 text-sm text-flame-700">
-                  <summary className="cursor-pointer text-[11px] uppercase tracking-wider text-flame-400 font-semibold">
+                <details className="mt-3 text-sm text-ink-soft">
+                  <summary className="cursor-pointer text-[11px] uppercase tracking-wider text-brand-text font-semibold">
                     Tips for next time
                   </summary>
                   <ul className="mt-2 list-disc pl-5 space-y-1">

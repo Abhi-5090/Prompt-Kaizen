@@ -83,11 +83,11 @@ export default function ContestCreate() {
         className="flex flex-wrap items-center justify-between gap-3"
       >
         <div>
-          <Link to="/contests" className="inline-flex items-center gap-1 text-xs uppercase tracking-wider font-semibold text-flame-400 hover:text-flame-900 transition">
+          <Link to="/contests" className="inline-flex items-center gap-1 text-xs uppercase tracking-wider font-semibold text-brand-text hover:text-ink transition">
             <ArrowLeft className="w-3.5 h-3.5" /> Back to contests
           </Link>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-flame-900">New Contest</h1>
-          <p className="text-flame-500 text-sm">
+          <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink">New Contest</h1>
+          <p className="text-brand-text text-sm">
             Set the basics now; you can upload the participant allowlist on the next screen.
           </p>
         </div>
@@ -96,15 +96,17 @@ export default function ContestCreate() {
       <form onSubmit={onSubmit} className="space-y-5">
         <div className="card p-6 space-y-4">
           <div>
-            <label className="label">Title <span className="text-cream-600">*</span></label>
+            <label className="label" htmlFor="cc-title">Title <span className="text-ink-faint">*</span></label>
             <input
+              id="cc-title"
               value={title} onChange={(e) => setTitle(e.target.value)}
               className="input max-w-lg" placeholder="e.g. Weekly Prompt Test #1"
             />
           </div>
           <div>
-            <label className="label">Description</label>
+            <label className="label" htmlFor="cc-description">Description</label>
             <textarea
+              id="cc-description"
               value={description} onChange={(e) => setDescription(e.target.value)}
               className="input min-h-[70px]"
               placeholder="Optional: what this test is about, time expectations, etc."
@@ -112,46 +114,50 @@ export default function ContestCreate() {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label className="label inline-flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5" /> Date (IST) <span className="text-cream-600">*</span>
+              <label className="label inline-flex items-center gap-1.5" htmlFor="cc-date">
+                <Calendar className="w-3.5 h-3.5" /> Date (IST) <span className="text-ink-faint">*</span>
               </label>
               <input
+                id="cc-date"
                 type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)}
                 className="input"
               />
             </div>
             <div>
-              <label className="label inline-flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5" /> Start time (IST) <span className="text-cream-600">*</span>
+              <label className="label inline-flex items-center gap-1.5" htmlFor="cc-start">
+                <Clock className="w-3.5 h-3.5" /> Start time (IST) <span className="text-ink-faint">*</span>
               </label>
               <input
+                id="cc-start"
                 type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)}
                 className="input"
               />
             </div>
             <div>
-              <label className="label inline-flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5" /> End time (IST) <span className="text-cream-600">*</span>
+              <label className="label inline-flex items-center gap-1.5" htmlFor="cc-end">
+                <Clock className="w-3.5 h-3.5" /> End time (IST) <span className="text-ink-faint">*</span>
               </label>
               <input
+                id="cc-end"
                 type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)}
                 className="input"
               />
             </div>
             <div>
-              <label className="label inline-flex items-center gap-1.5">
+              <label className="label inline-flex items-center gap-1.5" htmlFor="cc-duration">
                 <Clock className="w-3.5 h-3.5" /> Per-user limit (min)
               </label>
               <input
+                id="cc-duration"
                 type="number" min={5} max={480} value={durationMinutes}
                 onChange={(e) => setDurationMinutes(Number(e.target.value) || 60)}
                 className="input"
               />
             </div>
           </div>
-          <p className="text-[11px] text-flame-400">
-            The contest can be taken any time between <span className="font-semibold text-flame-700 tabular-nums">{startTime || '--:--'}</span> and{' '}
-            <span className="font-semibold text-flame-700 tabular-nums">{endTime || '--:--'}</span> IST on the chosen date.
+          <p className="text-[11px] text-brand-text">
+            The contest can be taken any time between <span className="font-semibold text-ink-soft tabular-nums">{startTime || '--:--'}</span> and{' '}
+            <span className="font-semibold text-ink-soft tabular-nums">{endTime || '--:--'}</span> IST on the chosen date.
           </p>
         </div>
 
@@ -160,8 +166,8 @@ export default function ContestCreate() {
             <div className="flex items-center gap-2.5">
               <span className="stat-icon"><Trophy className="w-5 h-5" /></span>
               <div>
-                <h3 className="font-semibold text-flame-900">Scenarios</h3>
-                <p className="text-[11px] uppercase tracking-wider text-flame-400 font-semibold">
+                <h3 className="font-semibold text-ink">Scenarios</h3>
+                <p className="text-[11px] uppercase tracking-wider text-brand-text font-semibold">
                   Each is scored out of 100. Final score is the average.
                 </p>
               </div>
@@ -180,22 +186,23 @@ export default function ContestCreate() {
               key={i}
               initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25, delay: i * 0.04 }}
-              className="rounded-xl border border-flame-100 p-4 space-y-3 bg-cream-50/40"
+              className="rounded-xl border border-line p-4 space-y-3 bg-surface/40"
             >
               <div className="flex items-center justify-between">
-                <span className="badge bg-flame-900 text-cream-300">Scenario {i + 1}</span>
+                <span className="badge bg-panel text-panel-soft">Scenario {i + 1}</span>
                 <button
                   type="button" onClick={() => removeScenario(i)}
                   disabled={scenarios.length <= 1}
-                  className="text-xs text-flame-500 hover:text-flame-900 inline-flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="text-xs text-brand-text hover:text-ink inline-flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
                   aria-label="Remove scenario"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Remove
                 </button>
               </div>
               <div>
-                <label className="label">Category <span className="text-cream-600">*</span></label>
+                <label className="label" htmlFor={`cc-cat-${i}`}>Category <span className="text-ink-faint">*</span></label>
                 <select
+                  id={`cc-cat-${i}`}
                   value={s.category}
                   onChange={(e) => updateScenario(i, { category: e.target.value })}
                   className="input"
@@ -205,8 +212,9 @@ export default function ContestCreate() {
                 </select>
               </div>
               <div>
-                <label className="label">Scenario text <span className="text-cream-600">*</span></label>
+                <label className="label" htmlFor={`cc-scen-${i}`}>Scenario text <span className="text-ink-faint">*</span></label>
                 <textarea
+                  id={`cc-scen-${i}`}
                   value={s.scenario}
                   onChange={(e) => updateScenario(i, { scenario: e.target.value })}
                   className="input min-h-[80px]"

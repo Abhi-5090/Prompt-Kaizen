@@ -4,6 +4,7 @@ const User = require('../models/User');
 const { parseEmailsFromBuffer } = require('../utils/parseEmails');
 const { ALLOWED_CATEGORIES } = require('./promptController');
 const { istDateTimeToUtc } = require('../utils/dailyChallenge');
+const { paginate } = require('../utils/pagination');
 
 /**
  * Stores `scheduledDate` as the UTC instant of midnight on the chosen IST day,
@@ -170,7 +171,28 @@ const updateContest = async (req, res) => {
     if (scenarios !== undefined) {
       const err = validateScenarios(scenarios);
       if (err) return res.status(400).json({ message: err });
-      contest.scenarios = scenarios;
+
+      // Changing the questions after people have started is not an edit, it
+      // is a different exam. Anyone who already answered would be scored
+      // against a scenario they never saw, and anyone mid-attempt would have
+      // the paper swapped underneath them. Allowed only while no one has
+      // started; otherwise the admin must close this contest and create a
+      // new one.
+      const scenariosChanged =
+        JSON.stringify((contest.scenarios || []).map((x) => ({ c: x.category, s: x.scenario }))) !==
+        JSON.stringify(scenarios.map((x) => ({ c: x.category, s: String(x.scenario).trim() })));
+
+      if (scenariosChanged) {
+        const attempts = await ContestSubmission.countDocuments({ contestId: contest._id });
+        if (attempts > 0) {
+          return res.status(409).json({
+            message:
+              `Scenarios cannot be changed — ${attempts} participant(s) have already started ` +
+              'this contest. Close it and create a new one instead.',
+          });
+        }
+        contest.scenarios = scenarios;
+      }
     }
     await contest.save();
     return res.json({ contest });
@@ -272,11 +294,15 @@ const getContestDetail = async (req, res) => {
   try {
     const contest = await Contest.findById(req.params.id).lean();
     if (!contest) return res.status(404).json({ message: 'Contest not found.' });
-    const submissions = await ContestSubmission.find({ contestId: contest._id })
-      .populate('userId', 'name email')
-      .sort({ averageScore: -1, submittedAt: -1 })
-      .lean();
-    return res.json({ contest, submissions });
+    // A popular contest can have thousands of submissions; the detail page
+    // renders a ranked table, so it pages like every other admin list.
+    const { items, pagination } = await paginate(ContestSubmission, {
+      filter: { contestId: contest._id },
+      sort: { averageScore: -1, submittedAt: -1 },
+      query: req.query,
+      populate: [['userId', 'name email']],
+    });
+    return res.json({ contest, submissions: items, items, pagination });
   } catch (err) {
     console.error('getContestDetail error:', err);
     return res.status(500).json({ message: 'Failed to load contest.' });

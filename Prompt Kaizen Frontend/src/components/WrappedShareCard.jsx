@@ -66,7 +66,7 @@ const WrappedShareCard = forwardRef(function WrappedShareCard({ data }, ref) {
             inset: 0,
             opacity: 0.08,
             backgroundImage:
-              'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.6) 1px, transparent 0)',
+              'radial-gradient(circle at 1px 1px, rgb(var(--panel-fg) / 0.6) 1px, transparent 0)',
             backgroundSize: '28px 28px',
           }}
         />

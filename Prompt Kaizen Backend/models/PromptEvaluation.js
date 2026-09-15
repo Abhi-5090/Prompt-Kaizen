@@ -34,6 +34,13 @@ const promptEvaluationSchema = new mongoose.Schema(
     suggestions: { type: [String], default: [] },
     improvedPrompt: { type: String, default: '' },
 
+    // Which engine produced this score. Evaluations are compared over time on
+    // the dashboard, so a run scored by the rule-based fallback during an LLM
+    // outage must be distinguishable from an LLM-scored one rather than
+    // silently mixed into the same trend line.
+    scoredBy:     { type: String, enum: ['rules', 'llm'], default: 'rules', index: true },
+    scoringModel: { type: String, default: null },
+
     // Marks an evaluation submitted as part of the Daily Challenge flow.
     isDailyChallenge: { type: Boolean, default: false, index: true },
     challengeDate:    { type: Date,    default: null },

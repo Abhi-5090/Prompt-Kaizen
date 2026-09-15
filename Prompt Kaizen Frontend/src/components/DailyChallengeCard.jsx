@@ -30,7 +30,7 @@ export default function DailyChallengeCard() {
 
   if (loading) {
     return (
-      <div className="card p-5 flex items-center gap-3 text-flame-500 text-sm">
+      <div className="card p-5 flex items-center gap-3 text-brand-text text-sm">
         <Loader2 className="w-4 h-4 animate-spin-slow" /> Loading today's challenge…
       </div>
     );
@@ -42,47 +42,47 @@ export default function DailyChallengeCard() {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-      className="relative overflow-hidden rounded-2xl bg-flame-900 text-cream-100 shadow-soft border border-flame-800"
+      className="relative overflow-hidden rounded-2xl bg-panel text-panel-fg shadow-soft border border-panel"
     >
       <div className="absolute inset-0 bg-mesh opacity-25" />
       <div
         className="absolute inset-0 opacity-[0.08]"
         style={{
           backgroundImage:
-            'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.6) 1px, transparent 0)',
+            'radial-gradient(circle at 1px 1px, rgb(var(--panel-fg) / 0.6) 1px, transparent 0)',
           backgroundSize: '22px 22px',
         }}
       />
       <div className="relative p-6 flex flex-wrap items-center gap-6">
         <div className="flex items-center gap-3 shrink-0">
-          <div className="w-12 h-12 rounded-xl bg-cream-300 text-flame-900 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-xl bg-surface-sunken text-ink flex items-center justify-center">
             <Calendar className="w-6 h-6" strokeWidth={2.2} />
           </div>
           <div className="leading-tight">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-cream-300/80 font-semibold">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-panel-soft/80 font-semibold">
               Today's Challenge
             </p>
-            <p className="font-semibold text-cream-100">{data.category}</p>
+            <p className="font-semibold text-panel-fg">{data.category}</p>
           </div>
         </div>
 
         <div className="flex-1 min-w-[260px]">
-          <p className="text-[15px] leading-relaxed text-cream-100/95">{data.scenario}</p>
+          <p className="text-[15px] leading-relaxed text-panel-fg/95">{data.scenario}</p>
           {completed && data.mySubmission ? (
             <div className="mt-3 flex items-center gap-3 text-sm">
-              <span className="badge bg-cream-300 text-flame-900">
+              <span className="badge bg-surface-sunken text-ink">
                 <CheckCircle2 className="w-3.5 h-3.5" /> Completed
               </span>
-              <span className="font-bold text-cream-100">{data.mySubmission.overallScore} / 100</span>
+              <span className="font-bold text-panel-fg">{data.mySubmission.overallScore} / 100</span>
               <span className={`badge ${ratingBadgeClass(data.mySubmission.rating)}`}>
                 {data.mySubmission.rating || 'Unrated'}
               </span>
             </div>
           ) : (
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs uppercase tracking-wider font-semibold text-cream-300/70">
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs uppercase tracking-wider font-semibold text-panel-soft/70">
               <span>One scenario · One prompt</span>
               <span
-                className="inline-flex items-center gap-1.5 rounded-full bg-cream-300/10 border border-cream-300/30 text-cream-300 px-2.5 py-1"
+                className="inline-flex items-center gap-1.5 rounded-full bg-surface-sunken/10 border border-line/30 text-panel-soft px-2.5 py-1"
                 aria-label={`Resets in ${countdown.hh} hours ${countdown.mm} minutes ${countdown.ss} seconds`}
               >
                 <Clock className="w-3.5 h-3.5" />
@@ -95,9 +95,9 @@ export default function DailyChallengeCard() {
         </div>
 
         <div className="shrink-0 flex flex-col items-end gap-2">
-          <div className="flex items-center gap-1.5 text-xs text-cream-200/80">
+          <div className="flex items-center gap-1.5 text-xs text-panel-soft/80">
             <Trophy className="w-3.5 h-3.5" />
-            <span>Completed: <span className="font-bold text-cream-100">{data.totalCompleted}</span></span>
+            <span>Completed: <span className="font-bold text-panel-fg">{data.totalCompleted}</span></span>
           </div>
           {completed && data.mySubmission ? (
             <Link to={`/prompts/${data.mySubmission._id}`} className="btn-cream text-sm">

@@ -13,8 +13,12 @@ import { ratingBadgeClass, roleBadgeClass } from '../utils/scoreUtils.js';
 import {
   BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
+import { useChartTheme } from '../utils/useChartTheme.js';
 
 export default function AdminDashboard() {
+  // Chart colours come from the design tokens so they follow the theme;
+  // Recharts takes colour props, not class names.
+  const chart = useChartTheme();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -40,8 +44,8 @@ export default function AdminDashboard() {
       >
         <div>
           <span className="chip"><Activity className="w-3.5 h-3.5" /> Platform overview</span>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-flame-900">Admin Overview</h1>
-          <p className="text-flame-500 text-sm">Platform-wide stats across all users and prompts.</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink">Admin Overview</h1>
+          <p className="text-brand-text text-sm">Platform-wide stats across all users and prompts.</p>
         </div>
       </motion.div>
 
@@ -54,22 +58,22 @@ export default function AdminDashboard() {
 
       <ChartCard title="Prompts by category" subtitle="Across the whole platform" Icon={Layers}>
         {categoryData.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-sm text-flame-400">No data yet.</div>
+          <div className="h-full flex items-center justify-center text-sm text-brand-text">No data yet.</div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={categoryData}>
               <defs>
                 <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%"   stopColor="#F15D23" stopOpacity={0.95} />
-                  <stop offset="100%" stopColor="#F15D23" stopOpacity={0.55} />
+                  <stop offset="0%"   stopColor={chart.brand} stopOpacity={0.95} />
+                  <stop offset="100%" stopColor={chart.brand} stopOpacity={0.55} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#FFFFFF" />
-              <XAxis dataKey="name" stroke="#6c757d" fontSize={10} angle={-15} textAnchor="end" height={60} interval={0} />
-              <YAxis stroke="#6c757d" fontSize={12} allowDecimals={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
+              <XAxis dataKey="name" stroke={chart.axis} fontSize={10} angle={-15} textAnchor="end" height={60} interval={0} />
+              <YAxis stroke={chart.axis} fontSize={12} allowDecimals={false} />
               <Tooltip
-                contentStyle={{ background: '#212529', border: 'none', borderRadius: 12, color: '#FFFFFF' }}
-                cursor={{ fill: 'rgba(255,255,255,0.4)' }}
+                {...chart.tooltip}
+                cursor={{ fill: 'rgb(var(--ink) / 0.06)' }}
               />
               <Bar dataKey="value" name="Prompts" fill="url(#barGrad)" radius={[8, 8, 0, 0]} />
             </BarChart>
@@ -87,27 +91,27 @@ export default function AdminDashboard() {
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
           className="card p-0 overflow-hidden"
         >
-          <div className="px-5 py-4 flex items-center justify-between gap-3 border-b border-flame-50">
+          <div className="px-5 py-4 flex items-center justify-between gap-3 border-b border-line">
             <div className="flex items-center gap-2.5">
               <span className="stat-icon"><UsersIcon className="w-5 h-5" /></span>
-              <h3 className="font-semibold text-flame-900">Recent users</h3>
+              <h3 className="font-semibold text-ink">Recent users</h3>
             </div>
-            <Link to="/users" className="text-sm font-semibold text-flame-900 inline-flex items-center gap-1 hover:gap-1.5 transition-all">
+            <Link to="/users" className="text-sm font-semibold text-ink inline-flex items-center gap-1 hover:gap-1.5 transition-all">
               All users <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
           {data.recentUsers?.length === 0 ? (
             <div className="p-12 text-center">
-              <div className="mx-auto w-12 h-12 rounded-2xl bg-cream-100 text-flame-900 flex items-center justify-center">
+              <div className="mx-auto w-12 h-12 rounded-2xl bg-surface-sunken text-ink flex items-center justify-center">
                 <Inbox className="w-6 h-6" />
               </div>
-              <p className="mt-3 text-sm text-flame-500">No users yet.</p>
+              <p className="mt-3 text-sm text-brand-text">No users yet.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[560px]">
                 <thead>
-                  <tr className="text-left text-flame-400 border-b border-flame-50 bg-cream-50">
+                  <tr className="text-left text-brand-text border-b border-line bg-surface">
                     <th className="py-2 px-4 text-[11px] uppercase tracking-wider font-semibold whitespace-nowrap">Name</th>
                     <th className="py-2 px-4 text-[11px] uppercase tracking-wider font-semibold whitespace-nowrap">Email</th>
                     <th className="py-2 px-4 text-[11px] uppercase tracking-wider font-semibold whitespace-nowrap">Role</th>
@@ -119,24 +123,24 @@ export default function AdminDashboard() {
                     <motion.tr
                       key={u._id}
                       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, delay: i * 0.02 }}
-                      className="border-b border-flame-50/60 hover:bg-cream-50/60 transition"
+                      className="border-b border-line/60 hover:bg-surface/60 transition"
                     >
                       <td className="py-2.5 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-cream-300 text-flame-900 flex items-center justify-center text-xs font-bold uppercase shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-surface-sunken text-ink flex items-center justify-center text-xs font-bold uppercase shrink-0">
                             {u.name?.[0] || 'U'}
                           </div>
-                          <span className="font-medium text-flame-900 whitespace-nowrap">{u.name}</span>
+                          <span className="font-medium text-ink whitespace-nowrap">{u.name}</span>
                         </div>
                       </td>
-                      <td className="py-2.5 px-4 text-flame-600 whitespace-nowrap">{u.email}</td>
+                      <td className="py-2.5 px-4 text-brand-text whitespace-nowrap">{u.email}</td>
                       <td className="py-2.5 px-4 whitespace-nowrap">
                         <span className={`badge ${roleBadgeClass(u.role)}`}>
                           {u.role === 'admin' ? <ShieldCheck className="w-3 h-3" /> : null}
                           {u.role}
                         </span>
                       </td>
-                      <td className="py-2.5 px-4 text-flame-500 whitespace-nowrap">{new Date(u.createdAt).toLocaleDateString()}</td>
+                      <td className="py-2.5 px-4 text-brand-text whitespace-nowrap">{new Date(u.createdAt).toLocaleDateString()}</td>
                     </motion.tr>
                   ))}
                 </tbody>
@@ -150,27 +154,27 @@ export default function AdminDashboard() {
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.05 }}
           className="card p-0 overflow-hidden"
         >
-          <div className="px-5 py-4 flex items-center justify-between gap-3 border-b border-flame-50">
+          <div className="px-5 py-4 flex items-center justify-between gap-3 border-b border-line">
             <div className="flex items-center gap-2.5">
               <span className="stat-icon"><FileText className="w-5 h-5" /></span>
-              <h3 className="font-semibold text-flame-900">Recent evaluations</h3>
+              <h3 className="font-semibold text-ink">Recent evaluations</h3>
             </div>
-            <Link to="/prompts" className="text-sm font-semibold text-flame-900 inline-flex items-center gap-1 hover:gap-1.5 transition-all">
+            <Link to="/prompts" className="text-sm font-semibold text-ink inline-flex items-center gap-1 hover:gap-1.5 transition-all">
               All prompts <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
           {data.recentPrompts?.length === 0 ? (
             <div className="p-12 text-center">
-              <div className="mx-auto w-12 h-12 rounded-2xl bg-cream-100 text-flame-900 flex items-center justify-center">
+              <div className="mx-auto w-12 h-12 rounded-2xl bg-surface-sunken text-ink flex items-center justify-center">
                 <Inbox className="w-6 h-6" />
               </div>
-              <p className="mt-3 text-sm text-flame-500">No prompts yet.</p>
+              <p className="mt-3 text-sm text-brand-text">No prompts yet.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[720px]">
                 <thead>
-                  <tr className="text-left text-flame-400 border-b border-flame-50 bg-cream-50">
+                  <tr className="text-left text-brand-text border-b border-line bg-surface">
                     <th className="py-2 px-4 text-[11px] uppercase tracking-wider font-semibold whitespace-nowrap">Date</th>
                     <th className="py-2 px-4 text-[11px] uppercase tracking-wider font-semibold whitespace-nowrap">Category</th>
                     <th className="py-2 px-4 text-[11px] uppercase tracking-wider font-semibold whitespace-nowrap">Scenario</th>
@@ -185,13 +189,13 @@ export default function AdminDashboard() {
                     <motion.tr
                       key={p._id}
                       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, delay: i * 0.02 }}
-                      className="border-b border-flame-50/60 hover:bg-cream-50/60 transition"
+                      className="border-b border-line/60 hover:bg-surface/60 transition"
                     >
-                      <td className="py-2.5 px-4 text-flame-500 whitespace-nowrap">{new Date(p.createdAt).toLocaleDateString()}</td>
-                      <td className="py-2.5 px-4 text-flame-800 whitespace-nowrap">{p.category}</td>
-                      <td className="py-2.5 px-4 max-w-xs truncate text-flame-700" title={p.scenario}>{p.scenario}</td>
-                      <td className="py-2.5 px-4 text-flame-700 whitespace-nowrap">{p.userId?.name || 'Unknown'}</td>
-                      <td className="py-2.5 px-4 font-bold text-flame-900 whitespace-nowrap">{p.overallScore}</td>
+                      <td className="py-2.5 px-4 text-brand-text whitespace-nowrap">{new Date(p.createdAt).toLocaleDateString()}</td>
+                      <td className="py-2.5 px-4 text-ink whitespace-nowrap">{p.category}</td>
+                      <td className="py-2.5 px-4 max-w-xs truncate text-ink-soft" title={p.scenario}>{p.scenario}</td>
+                      <td className="py-2.5 px-4 text-ink-soft whitespace-nowrap">{p.userId?.name || 'Unknown'}</td>
+                      <td className="py-2.5 px-4 font-bold text-ink whitespace-nowrap">{p.overallScore}</td>
                       <td className="py-2.5 px-4 whitespace-nowrap"><span className={`badge ${ratingBadgeClass(p.rating)}`}>{p.rating || 'Unrated'}</span></td>
                       <td className="py-2.5 px-4 text-right whitespace-nowrap">
                         <Link to={`/prompts/${p._id}`} className="btn-ghost text-xs">
@@ -213,16 +217,16 @@ export default function AdminDashboard() {
 function LoadingDashboard() {
   return (
     <div className="space-y-6 animate-pulse">
-      <div className="h-8 w-48 bg-flame-50 rounded-lg" />
+      <div className="h-8 w-48 bg-surface-sunken rounded-lg" />
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-28 rounded-2xl bg-white border border-flame-50 shimmer-bg animate-shimmer" />
+          <div key={i} className="h-28 rounded-2xl bg-surface border border-line shimmer-bg animate-shimmer" />
         ))}
       </div>
-      <div className="h-80 rounded-2xl bg-white border border-flame-50 shimmer-bg animate-shimmer" />
+      <div className="h-80 rounded-2xl bg-surface border border-line shimmer-bg animate-shimmer" />
       <div className="grid lg:grid-cols-2 gap-4">
-        <div className="h-64 rounded-2xl bg-white border border-flame-50 shimmer-bg animate-shimmer" />
-        <div className="h-64 rounded-2xl bg-white border border-flame-50 shimmer-bg animate-shimmer" />
+        <div className="h-64 rounded-2xl bg-surface border border-line shimmer-bg animate-shimmer" />
+        <div className="h-64 rounded-2xl bg-surface border border-line shimmer-bg animate-shimmer" />
       </div>
     </div>
   );

@@ -17,8 +17,12 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
   BarChart, Bar, CartesianGrid, Area, AreaChart,
 } from 'recharts';
+import { useChartTheme } from '../utils/useChartTheme.js';
 
 export default function Dashboard() {
+  // Chart colours come from the design tokens so they follow the theme;
+  // Recharts takes colour props, not class names.
+  const chart = useChartTheme();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -33,7 +37,7 @@ export default function Dashboard() {
   }, []);
 
   if (loading) return <LoadingDashboard />;
-  if (error)   return <p className="text-flame-900">{error}</p>;
+  if (error)   return <p className="text-ink">{error}</p>;
   if (!data)   return null;
 
   const trendData = (data.trend || []).map((t) => ({
@@ -59,8 +63,8 @@ export default function Dashboard() {
       >
         <div>
           <span className="chip"><Activity className="w-3.5 h-3.5" /> Live snapshot</span>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-flame-900">Your Dashboard</h1>
-          <p className="text-flame-500 text-sm">Track your prompting progress and parameter strengths.</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink">Your Dashboard</h1>
+          <p className="text-brand-text text-sm">Track your prompting progress and parameter strengths.</p>
         </div>
         <Link to="/analyze" className="btn-primary">
           <PlusCircle className="w-4 h-4" /> New Analysis
@@ -100,19 +104,19 @@ export default function Dashboard() {
               <AreaChart data={trendData}>
                 <defs>
                   <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%"   stopColor="#F15D23" stopOpacity={0.45} />
-                    <stop offset="100%" stopColor="#F15D23" stopOpacity={0.04} />
+                    <stop offset="0%"   stopColor={chart.brand} stopOpacity={0.45} />
+                    <stop offset="100%" stopColor={chart.brand} stopOpacity={0.04} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#FFFFFF" />
-                <XAxis dataKey="date" stroke="#6c757d" fontSize={12} />
-                <YAxis domain={[0, 100]} stroke="#6c757d" fontSize={12} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
+                <XAxis dataKey="date" stroke={chart.axis} fontSize={12} />
+                <YAxis domain={[0, 100]} stroke={chart.axis} fontSize={12} />
                 <Tooltip
-                  contentStyle={{ background: '#212529', border: 'none', borderRadius: 12, color: '#FFFFFF' }}
-                  labelStyle={{ color: '#FFFFFF' }}
+                  {...chart.tooltip}
+                  
                 />
-                <Area type="monotone" dataKey="score" stroke="#F15D23" strokeWidth={2.5} fill="url(#trendGrad)" />
-                <Line type="monotone" dataKey="score" stroke="#F15D23" strokeWidth={2.5} dot={{ r: 3, fill: '#F15D23' }} />
+                <Area type="monotone" dataKey="score" stroke={chart.brand} strokeWidth={2.5} fill="url(#trendGrad)" />
+                <Line type="monotone" dataKey="score" stroke={chart.brand} strokeWidth={2.5} dot={{ r: 3, fill: chart.brand }} />
               </AreaChart>
             </ResponsiveContainer>
           )}
@@ -128,13 +132,13 @@ export default function Dashboard() {
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={categoryData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#FFFFFF" />
-                <XAxis dataKey="name" stroke="#6c757d" fontSize={10} angle={-15} textAnchor="end" height={60} interval={0} />
-                <YAxis stroke="#6c757d" fontSize={12} allowDecimals={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
+                <XAxis dataKey="name" stroke={chart.axis} fontSize={10} angle={-15} textAnchor="end" height={60} interval={0} />
+                <YAxis stroke={chart.axis} fontSize={12} allowDecimals={false} />
                 <Tooltip
-                  contentStyle={{ background: '#212529', border: 'none', borderRadius: 12, color: '#FFFFFF' }}
+                  {...chart.tooltip}
                 />
-                <Bar dataKey="value" name="Prompts" fill="#F15D23" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="value" name="Prompts" fill={chart.brand} radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -157,9 +161,9 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
             <span className="stat-icon"><Inbox className="w-5 h-5" /></span>
-            <h3 className="font-semibold text-flame-900">Recent evaluations</h3>
+            <h3 className="font-semibold text-ink">Recent evaluations</h3>
           </div>
-          <Link to="/history" className="text-sm font-semibold text-flame-900 inline-flex items-center gap-1 hover:gap-1.5 transition-all">
+          <Link to="/history" className="text-sm font-semibold text-ink inline-flex items-center gap-1 hover:gap-1.5 transition-all">
             View all <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
@@ -173,7 +177,7 @@ export default function Dashboard() {
           <div className="overflow-x-auto -mx-1.5">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-flame-400 border-b border-flame-50">
+                <tr className="text-left text-brand-text border-b border-line">
                   <th className="py-2 px-3 text-[11px] uppercase tracking-wider font-semibold">Date</th>
                   <th className="py-2 px-3 text-[11px] uppercase tracking-wider font-semibold">Category</th>
                   <th className="py-2 px-3 text-[11px] uppercase tracking-wider font-semibold">Scenario</th>
@@ -184,11 +188,11 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {data.recent.map((r) => (
-                  <tr key={r._id} className="border-b border-flame-50/60 hover:bg-cream-50/40 transition">
-                    <td className="py-2.5 px-3 text-flame-500 whitespace-nowrap">{new Date(r.createdAt).toLocaleDateString()}</td>
-                    <td className="py-2.5 px-3 text-flame-800">{r.category}</td>
-                    <td className="py-2.5 px-3 max-w-xs truncate text-flame-700" title={r.scenario}>{r.scenario}</td>
-                    <td className="py-2.5 px-3 font-bold text-flame-900">{r.overallScore}</td>
+                  <tr key={r._id} className="border-b border-line/60 hover:bg-surface/40 transition">
+                    <td className="py-2.5 px-3 text-brand-text whitespace-nowrap">{new Date(r.createdAt).toLocaleDateString()}</td>
+                    <td className="py-2.5 px-3 text-ink">{r.category}</td>
+                    <td className="py-2.5 px-3 max-w-xs truncate text-ink-soft" title={r.scenario}>{r.scenario}</td>
+                    <td className="py-2.5 px-3 font-bold text-ink">{r.overallScore}</td>
                     <td className="py-2.5 px-3"><span className={`badge ${ratingBadgeClass(r.rating)}`}>{r.rating || 'Unrated'}</span></td>
                     <td className="py-2.5 px-3 text-right">
                       <Link to={`/prompts/${r._id}`} className="btn-ghost text-xs">
@@ -207,7 +211,7 @@ export default function Dashboard() {
 }
 
 function EmptyMsg({ msg }) {
-  return <div className="h-full flex items-center justify-center text-sm text-flame-400">{msg}</div>;
+  return <div className="h-full flex items-center justify-center text-sm text-brand-text">{msg}</div>;
 }
 
 /**
@@ -224,31 +228,31 @@ function StreakCard({ dailyStreak, bestDailyStreak, streakFreezes }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.2, ease: 'easeOut' }}
       whileHover={{ y: -3 }}
-      className="rounded-2xl border border-flame-50 shadow-soft bg-white p-5 transition-shadow hover:shadow-[0_18px_50px_-18px_rgba(33,37,41,0.25)]"
+      className="rounded-2xl border border-line shadow-soft bg-surface p-5 transition-shadow hover:shadow-[0_18px_50px_-18px_rgba(33,37,41,0.25)]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] uppercase tracking-[0.16em] font-semibold text-flame-400">
+          <p className="text-[11px] uppercase tracking-[0.16em] font-semibold text-brand-text">
             Daily Streak
           </p>
-          <p className="mt-2 text-3xl font-bold tracking-tight text-flame-900">
+          <p className="mt-2 text-3xl font-bold tracking-tight text-ink">
             {dailyStreak}
-            <span className="ml-1 text-sm font-semibold text-flame-400">
+            <span className="ml-1 text-sm font-semibold text-brand-text">
               {dailyStreak === 1 ? 'day' : 'days'}
             </span>
           </p>
           <p
-            className="text-[11px] mt-1 text-flame-400 inline-flex items-center gap-1"
+            className="text-[11px] mt-1 text-brand-text inline-flex items-center gap-1"
             title={`${streakFreezes} streak freeze${streakFreezes === 1 ? '' : 's'} ready — auto-spends if you miss a day.`}
           >
             Best {bestLabel} <span className="opacity-50">·</span>
             <Snowflake className="w-3 h-3 -mt-0.5" /> {freezeLabel}
           </p>
-          <p className="text-[10px] mt-0.5 text-flame-300">
+          <p className="text-[10px] mt-0.5 text-ink-faint">
             Earn one at every 7-day milestone
           </p>
         </div>
-        <div className="w-11 h-11 rounded-xl bg-cream-100 text-flame-900 flex items-center justify-center shrink-0">
+        <div className="w-11 h-11 rounded-xl bg-surface-sunken text-ink flex items-center justify-center shrink-0">
           <Flame className="w-5 h-5" strokeWidth={2} />
         </div>
       </div>
@@ -259,11 +263,11 @@ function StreakCard({ dailyStreak, bestDailyStreak, streakFreezes }) {
 function EmptyState({ title, description, cta }) {
   return (
     <div className="text-center py-10">
-      <div className="mx-auto w-12 h-12 rounded-2xl bg-cream-100 text-flame-900 flex items-center justify-center">
+      <div className="mx-auto w-12 h-12 rounded-2xl bg-surface-sunken text-ink flex items-center justify-center">
         <Inbox className="w-6 h-6" />
       </div>
-      <p className="mt-3 font-semibold text-flame-900">{title}</p>
-      <p className="text-sm text-flame-500 mt-1">{description}</p>
+      <p className="mt-3 font-semibold text-ink">{title}</p>
+      <p className="text-sm text-brand-text mt-1">{description}</p>
       <div>{cta}</div>
     </div>
   );
@@ -272,22 +276,22 @@ function EmptyState({ title, description, cta }) {
 function LoadingDashboard() {
   return (
     <div className="space-y-6 animate-pulse">
-      <div className="h-8 w-48 bg-flame-50 rounded-lg" />
+      <div className="h-8 w-48 bg-surface-sunken rounded-lg" />
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
-            className={`h-28 rounded-2xl bg-white border border-flame-50 shimmer-bg animate-shimmer ${
+            className={`h-28 rounded-2xl bg-surface border border-line shimmer-bg animate-shimmer ${
               i === 4 ? 'col-span-2 lg:col-span-1' : ''
             }`}
           />
         ))}
       </div>
       <div className="grid lg:grid-cols-2 gap-4">
-        <div className="h-80 rounded-2xl bg-white border border-flame-50 shimmer-bg animate-shimmer" />
-        <div className="h-80 rounded-2xl bg-white border border-flame-50 shimmer-bg animate-shimmer" />
+        <div className="h-80 rounded-2xl bg-surface border border-line shimmer-bg animate-shimmer" />
+        <div className="h-80 rounded-2xl bg-surface border border-line shimmer-bg animate-shimmer" />
       </div>
-      <div className="h-44 rounded-2xl bg-white border border-flame-50 shimmer-bg animate-shimmer" />
+      <div className="h-44 rounded-2xl bg-surface border border-line shimmer-bg animate-shimmer" />
     </div>
   );
 }

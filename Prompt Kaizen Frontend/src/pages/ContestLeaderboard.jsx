@@ -44,16 +44,16 @@ export default function ContestLeaderboard() {
         className="flex flex-wrap items-center justify-between gap-3"
       >
         <div>
-          <Link to="/contests" className="inline-flex items-center gap-1 text-xs uppercase tracking-wider font-semibold text-flame-400 hover:text-flame-900 transition">
+          <Link to="/contests" className="inline-flex items-center gap-1 text-xs uppercase tracking-wider font-semibold text-brand-text hover:text-ink transition">
             <ArrowLeft className="w-3.5 h-3.5" /> Back to contests
           </Link>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-flame-900">Leaderboard</h1>
-          <p className="text-flame-500 text-sm">
+          <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink">Leaderboard</h1>
+          <p className="text-brand-text text-sm">
             Ranked by average accuracy. Ties broken by faster submission time.
           </p>
         </div>
         {me ? (
-          <span className="inline-flex items-center gap-2 rounded-full bg-cream-100 border border-cream-200 text-flame-800 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider">
+          <span className="inline-flex items-center gap-2 rounded-full bg-surface-sunken border border-line text-ink px-3 py-1.5 text-xs font-semibold uppercase tracking-wider">
             <Trophy className="w-3.5 h-3.5" /> Your rank · #{me.rank}
           </span>
         ) : null}
@@ -65,16 +65,16 @@ export default function ContestLeaderboard() {
         {loading ? (
           <div className="p-6 space-y-2 animate-pulse">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-12 rounded-xl bg-cream-50/60" />
+              <div key={i} className="h-12 rounded-xl bg-surface/60" />
             ))}
           </div>
         ) : rows.length === 0 ? (
           <div className="p-12 text-center">
-            <div className="mx-auto w-12 h-12 rounded-2xl bg-cream-100 text-flame-900 flex items-center justify-center">
+            <div className="mx-auto w-12 h-12 rounded-2xl bg-surface-sunken text-ink flex items-center justify-center">
               <Inbox className="w-6 h-6" />
             </div>
-            <p className="mt-3 font-semibold text-flame-900">No submissions yet</p>
-            <p className="text-sm text-flame-500 mt-1">
+            <p className="mt-3 font-semibold text-ink">No submissions yet</p>
+            <p className="text-sm text-brand-text mt-1">
               Be the first to submit a contest to claim the top spot.
             </p>
           </div>
@@ -82,7 +82,7 @@ export default function ContestLeaderboard() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-flame-400 border-b border-flame-50 bg-cream-50/40">
+                <tr className="text-left text-brand-text border-b border-line bg-surface/40">
                   <th className="py-2 px-4 text-[11px] uppercase tracking-wider font-semibold">Rank</th>
                   <th className="py-2 px-4 text-[11px] uppercase tracking-wider font-semibold">Participant</th>
                   <th className="py-2 px-4 text-[11px] uppercase tracking-wider font-semibold">Avg score</th>
@@ -99,51 +99,51 @@ export default function ContestLeaderboard() {
                       key={r.userId}
                       initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                       transition={{ duration: 0.2, delay: i * 0.02 }}
-                      className={`border-b border-flame-50/60 transition ${
+                      className={`border-b border-line/60 transition ${
                         r.isMe
-                          ? 'bg-cream-100/70 hover:bg-cream-200/70'
+                          ? 'bg-surface-sunken/70 hover:bg-surface-sunken/70'
                           : r.rank <= 3
-                            ? 'bg-cream-50/40 hover:bg-cream-50/80'
-                            : 'hover:bg-cream-50/40'
+                            ? 'bg-surface/40 hover:bg-surface/80'
+                            : 'hover:bg-surface/40'
                       }`}
                     >
                       <td className="py-2.5 px-4 whitespace-nowrap">
                         <span className={`inline-flex items-center gap-1.5 font-bold ${
-                          r.rank <= 3 ? 'text-flame-900' : 'text-flame-700'
+                          r.rank <= 3 ? 'text-ink' : 'text-ink-soft'
                         }`}>
-                          {Icon ? <Icon className="w-4 h-4 text-flame-900" strokeWidth={2.4} /> : null}
+                          {Icon ? <Icon className="w-4 h-4 text-ink" strokeWidth={2.4} /> : null}
                           #{r.rank}
                         </span>
                       </td>
                       <td className="py-2.5 px-4">
                         <div className="flex items-center gap-2.5">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold uppercase shrink-0 ${
-                            r.isMe ? 'bg-flame-900 text-cream-300' : 'bg-cream-300 text-flame-900'
+                            r.isMe ? 'bg-panel text-panel-soft' : 'bg-surface-sunken text-ink'
                           }`}>
                             {r.name?.[0] || '?'}
                           </div>
                           <div className="min-w-0">
-                            <p className="font-medium text-flame-900 inline-flex items-center gap-1.5">
+                            <p className="font-medium text-ink inline-flex items-center gap-1.5">
                               {r.name}
                               {r.isMe ? (
-                                <span className="badge bg-flame-900 text-cream-300 text-[9px]">You</span>
+                                <span className="badge bg-panel text-panel-soft text-[9px]">You</span>
                               ) : null}
                             </p>
-                            <p className="text-xs text-flame-500 truncate">{r.email}</p>
+                            <p className="text-xs text-brand-text truncate">{r.email}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="py-2.5 px-4 whitespace-nowrap font-bold text-flame-900 tabular-nums">
-                        {r.avgScore}<span className="text-flame-400 text-xs">/100</span>
+                      <td className="py-2.5 px-4 whitespace-nowrap font-bold text-ink tabular-nums">
+                        {r.avgScore}<span className="text-brand-text text-xs">/100</span>
                       </td>
-                      <td className="py-2.5 px-4 whitespace-nowrap text-flame-700 tabular-nums">
+                      <td className="py-2.5 px-4 whitespace-nowrap text-ink-soft tabular-nums">
                         <span className="inline-flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-flame-500" /> {formatDuration(r.avgTimeMs)}
+                          <Clock className="w-3.5 h-3.5 text-brand-text" /> {formatDuration(r.avgTimeMs)}
                         </span>
                       </td>
-                      <td className="py-2.5 px-4 text-flame-700 font-semibold">{r.contests}</td>
-                      <td className="py-2.5 px-4 whitespace-nowrap font-semibold text-flame-700 tabular-nums">
-                        {r.bestScore}<span className="text-flame-400 text-xs">/100</span>
+                      <td className="py-2.5 px-4 text-ink-soft font-semibold">{r.contests}</td>
+                      <td className="py-2.5 px-4 whitespace-nowrap font-semibold text-ink-soft tabular-nums">
+                        {r.bestScore}<span className="text-brand-text text-xs">/100</span>
                       </td>
                     </motion.tr>
                   );
@@ -162,9 +162,9 @@ function Podium({ rows, loading }) {
   if (loading || rows.length < 3) return null;
   const [first, second, third] = rows.slice(0, 3);
   const positions = [
-    { row: second, place: 2, accent: 'bg-white border-flame-100',    badge: 'bg-flame-700 text-cream-100',  Icon: Award },
-    { row: first,  place: 1, accent: 'bg-cream-300 border-cream-400', badge: 'bg-flame-900 text-cream-300', Icon: Trophy },
-    { row: third,  place: 3, accent: 'bg-white border-flame-100',    badge: 'bg-flame-700 text-cream-100',  Icon: Medal },
+    { row: second, place: 2, accent: 'bg-surface border-line',    badge: 'bg-panel text-panel-fg',  Icon: Award },
+    { row: first,  place: 1, accent: 'bg-surface-sunken border-line', badge: 'bg-panel text-panel-soft', Icon: Trophy },
+    { row: third,  place: 3, accent: 'bg-surface border-line',    badge: 'bg-panel text-panel-fg',  Icon: Medal },
   ];
   return (
     <motion.div
@@ -184,25 +184,25 @@ function Podium({ rows, loading }) {
             <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${p.badge}`}>
               <p.Icon className="w-3 h-3" /> Rank #{p.place}
             </span>
-            <span className="text-2xl font-bold tabular-nums text-flame-900">
-              {p.row.avgScore}<span className="text-flame-700/70 text-sm font-semibold">/100</span>
+            <span className="text-2xl font-bold tabular-nums text-ink">
+              {p.row.avgScore}<span className="text-ink-soft/70 text-sm font-semibold">/100</span>
             </span>
           </div>
           <div className="mt-3 flex items-center gap-2.5">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold uppercase shrink-0 ${
-              p.place === 1 ? 'bg-flame-900 text-cream-300' : 'bg-cream-300 text-flame-900'
+              p.place === 1 ? 'bg-panel text-panel-soft' : 'bg-surface-sunken text-ink'
             }`}>
               {p.row.name?.[0] || '?'}
             </div>
             <div className="min-w-0">
-              <p className="font-semibold text-flame-900 truncate inline-flex items-center gap-1.5">
+              <p className="font-semibold text-ink truncate inline-flex items-center gap-1.5">
                 {p.row.name}
-                {p.row.isMe ? <span className="badge bg-flame-900 text-cream-300 text-[9px]">You</span> : null}
+                {p.row.isMe ? <span className="badge bg-panel text-panel-soft text-[9px]">You</span> : null}
               </p>
-              <p className="text-xs text-flame-700/70 truncate">{p.row.email}</p>
+              <p className="text-xs text-ink-soft/70 truncate">{p.row.email}</p>
             </div>
           </div>
-          <div className="mt-3 flex items-center gap-3 text-[11px] uppercase tracking-wider font-semibold text-flame-700/80">
+          <div className="mt-3 flex items-center gap-3 text-[11px] uppercase tracking-wider font-semibold text-ink-soft/80">
             <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3" /> {formatDuration(p.row.avgTimeMs)}</span>
             <span className="inline-flex items-center gap-1"><Target className="w-3 h-3" /> {p.row.contests}</span>
           </div>

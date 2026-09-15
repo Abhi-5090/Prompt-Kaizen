@@ -3,13 +3,16 @@ const User = require('../models/User');
 const PromptEvaluation = require('../models/PromptEvaluation');
 const ContestSubmission = require('../models/ContestSubmission');
 const Contest = require('../models/Contest');
+const { recordAudit } = require('../utils/audit');
+const { getMailHealth, verifyMailConnection } = require('../utils/mailer');
+const { getLlmHealth } = require('../utils/llmAnalyzer');
+const { paginate, withSearch } = require('../utils/pagination');
 
 // Safety caps for unbounded admin reads. Aggregations would be cleaner long
 // term, but capping the find() result preserves the current response shape
 // (no frontend changes needed) while preventing a single request from sweeping
 // hundreds of thousands of docs as the platform grows.
 const ADMIN_STATS_PROMPT_SAMPLE = 10000;
-const ADMIN_LIST_LIMIT = 1000;
 
 const stats = async (req, res) => {
   try {
@@ -60,14 +63,30 @@ const stats = async (req, res) => {
   }
 };
 
+/**
+ * Paginated, server-side-searchable user list.
+ *
+ * Was `find().limit(1000)` with the browser filtering the result: past 1000
+ * accounts the table silently truncated, and search could only ever match
+ * within that window.
+ */
 const listUsers = async (req, res) => {
   try {
-    const users = await User.find()
-      .sort({ createdAt: -1 })
-      .limit(ADMIN_LIST_LIMIT)
-      .select('-password')
-      .lean();
-    return res.json({ users });
+    const filter = withSearch({}, req.query.search, ['name', 'email']);
+    const [{ items, pagination }, adminCount] = await Promise.all([
+      paginate(User, {
+        filter,
+        sort: { createdAt: -1 },
+        query: req.query,
+        select: '-password',
+      }),
+      // Collection-wide counts cannot be derived from a single page, so they
+      // are counted in the database rather than tallied from the rows shown.
+      User.countDocuments({ role: 'admin' }),
+    ]);
+    // `users` is kept alongside `items` so an older client that has not been
+    // updated for pagination still renders the current page.
+    return res.json({ users: items, items, pagination, meta: { adminCount } });
   } catch (err) {
     console.error('admin listUsers error:', err);
     return res.status(500).json({ message: 'Failed to list users.' });
@@ -76,12 +95,45 @@ const listUsers = async (req, res) => {
 
 const listPrompts = async (req, res) => {
   try {
-    const prompts = await PromptEvaluation.find()
-      .sort({ createdAt: -1 })
-      .limit(ADMIN_LIST_LIMIT)
-      .populate('userId', 'name email')
-      .lean();
-    return res.json({ prompts });
+    // Category filtering moves to the server for the same reason as search:
+    // filtering a truncated page client-side gives wrong answers.
+    const base = {};
+    if (req.query.category) base.category = req.query.category;
+    const filter = withSearch(base, req.query.search, ['scenario', 'userPrompt']);
+
+    // Sorting also belongs on the server now. Ordering a single page client-side
+    // reorders 25 rows out of thousands, which looks like a sort but is not one.
+    // Whitelisted: a sort field taken straight from the query string would let a
+    // caller sort by any indexed or unindexed field and trigger a collection scan.
+    const SORTABLE = {
+      score:  'overallScore',
+      // Rating is derived from the score, so ranking by score gives the same
+      // tier order with a sensible tiebreak inside each tier — and uses an
+      // index instead of sorting on a string.
+      rating: 'overallScore',
+      date:   'createdAt',
+    };
+    const field = SORTABLE[req.query.sort] || 'createdAt';
+    const dir = req.query.dir === 'asc' ? 1 : -1;
+    const sort = field === 'createdAt' ? { createdAt: dir } : { [field]: dir, createdAt: -1 };
+
+    const [{ items, pagination }, categories] = await Promise.all([
+      paginate(PromptEvaluation, {
+        filter,
+        sort,
+        query: req.query,
+        populate: [['userId', 'name email']],
+      }),
+      // The category filter's options must describe the whole collection, not
+      // whichever categories happen to appear on the current page.
+      PromptEvaluation.distinct('category'),
+    ]);
+    return res.json({
+      prompts: items,
+      items,
+      pagination,
+      meta: { categories: categories.sort() },
+    });
   } catch (err) {
     console.error('admin listPrompts error:', err);
     return res.status(500).json({ message: 'Failed to list prompts.' });
@@ -143,12 +195,32 @@ const bulkUploadUsers = async (req, res) => {
       }
       seenInFile.add(r.email);
       try {
-        const user = await User.create({ name: r.name, email: r.email, password: r.password });
+        const user = await User.create({
+          name: r.name,
+          email: r.email,
+          password: r.password,
+          // An operator creating the account and handing out the password IS
+          // the verification step. Without this the account defaulted to
+          // emailVerified:false, so login refused it and mailed an OTP
+          // instead — the password the admin distributed simply did not work.
+          emailVerified: true,
+        });
         created.push({ _id: user._id, name: user.name, email: user.email });
       } catch (err) {
         skipped.push({ email: r.email, reason: err?.message || 'Failed to create.' });
       }
     }
+
+    await recordAudit(req, {
+      action: 'user.bulk_create',
+      targetType: 'User',
+      metadata: {
+        parsed: rows.length,
+        created: created.length,
+        duplicates: duplicates.length,
+        invalid: skipped.length,
+      },
+    });
 
     return res.json({
       parsed: rows.length,
@@ -187,6 +259,14 @@ const deleteUser = async (req, res) => {
         { $pull: { allowedEmails: target.email } }
       ),
     ]);
+    await recordAudit(req, {
+      action: 'user.delete',
+      targetType: 'User',
+      targetId: target._id,
+      targetLabel: target.email,
+      metadata: { name: target.name, role: target.role },
+    });
+
     await target.deleteOne();
     return res.json({ message: 'User deleted.' });
   } catch (err) {
@@ -217,14 +297,21 @@ const resetUserPassword = async (req, res) => {
     user.password = String(password); // pre-save hook re-hashes
     await user.save();
 
-    // Audit log — destructive admin action. Until a dedicated audit collection
-    // exists, write to console so the line lands in the host's log stream.
-    console.warn(
-      `[ADMIN AUDIT] password reset: actor=${req.user.email} (${req.user._id}) ` +
-      `target=${user.email} (${user._id}) at=${new Date().toISOString()}`
-    );
+    // Destructive admin action — recorded in the AuditLog collection, which
+    // is queryable and survives log rotation (this used to be a console.warn).
+    // Note the save above bumped tokenVersion, so every session the target
+    // had open is now signed out.
+    await recordAudit(req, {
+      action: 'user.password_reset',
+      targetType: 'User',
+      targetId: user._id,
+      targetLabel: user.email,
+      metadata: { selfService: String(user._id) === String(req.user._id) },
+    });
 
-    return res.json({ message: 'Password reset.' });
+    return res.json({
+      message: 'Password reset. The user has been signed out of all sessions.',
+    });
   } catch (err) {
     console.error('resetUserPassword error:', err);
     return res.status(500).json({ message: 'Failed to reset password.' });
@@ -244,6 +331,14 @@ const exportUsers = async (req, res) => {
       .sort({ createdAt: -1 })
       .select('name email')
       .lean();
+
+    // Exporting every user's name and address is a bulk PII read and is
+    // recorded as one.
+    await recordAudit(req, {
+      action: 'user.export',
+      targetType: 'User',
+      metadata: { count: users.length },
+    });
 
     const rows = [
       ['Name', 'Email'],
@@ -279,8 +374,90 @@ const exportUsers = async (req, res) => {
   }
 };
 
+/**
+ * Manually mark a user's email as verified.
+ *
+ * Recovery path for accounts stranded by a mail outage: they registered
+ * successfully, the verification code never arrived, and login refuses them
+ * because `emailVerified` is false. Without this an operator's only option is
+ * editing the database by hand. Recorded in the audit log because it bypasses
+ * proof of address ownership.
+ */
+const verifyUserEmail = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+    if (user.emailVerified) {
+      return res.json({ message: 'That account is already verified.', alreadyVerified: true });
+    }
+
+    user.emailVerified = true;
+    // Clear any pending code so a stale one can't be replayed later.
+    user.otpHash = null;
+    user.otpExpiresAt = null;
+    user.otpAttempts = 0;
+    await user.save();
+
+    await recordAudit(req, {
+      action: 'user.email_verified_by_admin',
+      targetType: 'User',
+      targetId: user._id,
+      targetLabel: user.email,
+      metadata: { reason: 'manual verification (bypasses email ownership proof)' },
+    });
+
+    return res.json({ message: `${user.email} can now sign in.` });
+  } catch (err) {
+    console.error('verifyUserEmail error:', err);
+    return res.status(500).json({ message: 'Failed to verify user.' });
+  }
+};
+
+/**
+ * Mail delivery status for the admin console. Signup depends entirely on this
+ * path, and its failures are asynchronous and otherwise invisible, so
+ * operators need a direct read on it. `recheck=1` re-runs the SMTP handshake.
+ */
+const mailStatus = async (req, res) => {
+  try {
+    if (req.query.recheck === '1' || req.query.recheck === 'true') {
+      await verifyMailConnection();
+    }
+    const health = getMailHealth();
+    const llm = getLlmHealth();
+    return res.json({
+      mail: health,
+      impact: health.healthy
+        ? null
+        : 'New users cannot receive verification codes and will be unable to sign in.',
+      // Scoring engine status. When `enabled` is true but `fallbacks` is
+      // climbing, submissions are silently being graded by the rule-based
+      // engine instead of the LLM — scores stay valid but are less insightful,
+      // and that is worth knowing before users report it.
+      llm: {
+        enabled: llm.enabled,
+        model: llm.model,
+        calls: llm.calls,
+        failures: llm.failures,
+        fallbacks: llm.fallbacks,
+        lastError: llm.lastError,
+        lastErrorAt: llm.lastErrorAt,
+        tokens: {
+          prompt: llm.totalPromptTokens,
+          completion: llm.totalCompletionTokens,
+        },
+      },
+    });
+  } catch (err) {
+    console.error('mailStatus error:', err);
+    return res.status(500).json({ message: 'Failed to read mail status.' });
+  }
+};
+
 module.exports = {
   stats,
+  mailStatus,
+  verifyUserEmail,
   listUsers,
   listPrompts,
   bulkUploadUsers,

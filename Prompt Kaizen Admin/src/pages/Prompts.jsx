@@ -1,28 +1,37 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FileText, Search, Filter, Eye, Inbox, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../api/axiosInstance.js';
 import { ratingBadgeClass } from '../utils/scoreUtils.js';
+import { usePaginatedList } from '../utils/usePaginatedList.js';
+import Pagination from '../components/Pagination.jsx';
 
 // Rating tiers ranked highest → lowest. Used as the primary key when sorting
 // by Rating; overallScore is the tiebreaker within the same tier.
-const RATING_RANK = {
-  'Excellent Prompt': 5,
-  'Good Prompt': 4,
-  'Average Prompt': 3,
-  'Needs Improvement': 2,
-  'Poor Prompt': 1,
-};
 
 export default function Prompts() {
-  const [prompts, setPrompts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [q, setQ] = useState('');
   const [category, setCategory] = useState('');
   const [sortBy, setSortBy] = useState(null);   // 'score' | 'rating' | null
   const [sortDir, setSortDir] = useState(null); // 'asc' | 'desc' | null
+
+  // Search, filtering, sorting and paging all happen server-side. Doing any of
+  // them in the browser only ever applied to the rows already fetched, so on a
+  // collection larger than one page the results were simply wrong.
+  const {
+    items: prompts, pagination, meta, loading, error,
+    page, setPage, search: q, setSearch: setQ,
+  } = usePaginatedList('/admin/prompts', {
+    limit: 25,
+    extraParams: {
+      ...(category ? { category } : {}),
+      ...(sortBy && sortDir ? { sort: sortBy, dir: sortDir } : {}),
+    },
+  });
+
+  const categories = meta.categories || [];
+  const filtered = prompts;
 
   // Three-click cycle on the same column: ascending → descending → cleared
   // (original DB order). Switching to a different column starts at ascending.
@@ -42,53 +51,6 @@ export default function Prompts() {
     }
   };
 
-  useEffect(() => {
-    api.get('/admin/prompts')
-      .then((res) => setPrompts(res.data.prompts || []))
-      .catch((e) => toast.error(e?.response?.data?.message || 'Failed to load prompts.'))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const categories = useMemo(
-    () => Array.from(new Set(prompts.map((p) => p.category))).sort(),
-    [prompts]
-  );
-
-  const filtered = useMemo(() => {
-    const query = q.trim().toLowerCase();
-    const list = prompts.filter((p) => {
-      if (category && p.category !== category) return false;
-      if (!query) return true;
-      return (
-        (p.scenario || '').toLowerCase().includes(query) ||
-        (p.userPrompt || '').toLowerCase().includes(query) ||
-        (p.userId?.name || '').toLowerCase().includes(query) ||
-        (p.userId?.email || '').toLowerCase().includes(query)
-      );
-    });
-
-    if (!sortBy || !sortDir) return list; // unsorted → original DB order
-
-    // Sort by score: pure numeric.
-    // Sort by rating: by tier rank, with overallScore as tiebreaker so two
-    // "Average Prompt" rows are ordered by their numeric scores (higher on
-    // top when descending, lower on top when ascending).
-    const mult = sortDir === 'desc' ? -1 : 1;
-    const sorted = list.slice().sort((a, b) => {
-      if (sortBy === 'score') {
-        return mult * ((a.overallScore || 0) - (b.overallScore || 0));
-      }
-      if (sortBy === 'rating') {
-        const ra = RATING_RANK[a.rating] || 0;
-        const rb = RATING_RANK[b.rating] || 0;
-        if (ra !== rb) return mult * (ra - rb);
-        return mult * ((a.overallScore || 0) - (b.overallScore || 0));
-      }
-      return 0;
-    });
-    return sorted;
-  }, [prompts, q, category, sortBy, sortDir]);
-
   return (
     <div className="space-y-6">
       <motion.div
@@ -97,51 +59,59 @@ export default function Prompts() {
       >
         <div>
           <span className="chip"><FileText className="w-3.5 h-3.5" /> Prompt evaluations</span>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-flame-900">Prompts</h1>
-          <p className="text-flame-500 text-sm">{prompts.length} total evaluations on the platform.</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink">Prompts</h1>
+          <p className="text-brand-text text-sm">{prompts.length} total evaluations on the platform.</p>
         </div>
       </motion.div>
 
       <div className="card p-3 flex flex-wrap gap-2 items-center">
         <div className="relative flex-1 min-w-[220px]">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-flame-300" />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
+            type="search"
+            aria-label="Search prompts by scenario, prompt text or user"
             placeholder="Search scenario, prompt, user..."
             className="input pl-9"
           />
         </div>
         <div className="relative">
-          <Filter className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-flame-300" />
-          <select value={category} onChange={(e) => setCategory(e.target.value)} className="input pl-9 min-w-[200px]">
+          <Filter className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
+          <select
+            aria-label="Filter by category"
+            value={category} onChange={(e) => setCategory(e.target.value)}
+            className="input pl-9 min-w-[200px]"
+          >
             <option value="">All categories</option>
             {categories.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
-        <span className="badge-ghost ml-auto">{filtered.length} match{filtered.length === 1 ? '' : 'es'}</span>
+        <span className="badge-ghost ml-auto">
+          {pagination.total.toLocaleString()} {q || category ? 'match' : 'prompt'}{pagination.total === 1 ? '' : q || category ? 'es' : 's'}
+        </span>
       </div>
 
       <div className="card p-0 overflow-hidden">
         {loading ? (
           <div className="p-6 space-y-2 animate-pulse">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-12 rounded-xl bg-cream-100" />
+              <div key={i} className="h-12 rounded-xl bg-surface-sunken" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center">
-            <div className="mx-auto w-12 h-12 rounded-2xl bg-cream-100 text-flame-900 flex items-center justify-center">
+            <div className="mx-auto w-12 h-12 rounded-2xl bg-surface-sunken text-ink flex items-center justify-center">
               <Inbox className="w-6 h-6" />
             </div>
-            <p className="mt-3 font-semibold text-flame-900">No prompts match your filters</p>
-            <p className="text-sm text-flame-500 mt-1">Try a different search or category.</p>
+            <p className="mt-3 font-semibold text-ink">No prompts match your filters</p>
+            <p className="text-sm text-brand-text mt-1">Try a different search or category.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-flame-400 border-b border-flame-50 bg-cream-50">
+                <tr className="text-left text-brand-text border-b border-line bg-surface">
                   <th className="py-2 px-4 text-[11px] uppercase tracking-wider font-semibold">Date</th>
                   <th className="py-2 px-4 text-[11px] uppercase tracking-wider font-semibold">User</th>
                   <th className="py-2 px-4 text-[11px] uppercase tracking-wider font-semibold">Category</th>
@@ -160,23 +130,23 @@ export default function Prompts() {
                   <motion.tr
                     key={p._id}
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, delay: i * 0.02 }}
-                    className="border-b border-flame-50/60 hover:bg-cream-50/60 transition"
+                    className="border-b border-line/60 hover:bg-surface/60 transition"
                   >
-                    <td className="py-2.5 px-4 text-flame-500 whitespace-nowrap">{new Date(p.createdAt).toLocaleDateString()}</td>
+                    <td className="py-2.5 px-4 text-brand-text whitespace-nowrap">{new Date(p.createdAt).toLocaleDateString()}</td>
                     <td className="py-2.5 px-4">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-cream-300 text-flame-900 flex items-center justify-center text-[10px] font-bold uppercase">
+                        <div className="w-7 h-7 rounded-full bg-surface-sunken text-ink flex items-center justify-center text-[10px] font-bold uppercase">
                           {p.userId?.name?.[0] || '?'}
                         </div>
                         <div>
-                          <p className="font-medium text-flame-900">{p.userId?.name || '—'}</p>
-                          <p className="text-xs text-flame-500">{p.userId?.email || ''}</p>
+                          <p className="font-medium text-ink">{p.userId?.name || '—'}</p>
+                          <p className="text-xs text-brand-text">{p.userId?.email || ''}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="py-2.5 px-4 text-flame-800">{p.category}</td>
-                    <td className="py-2.5 px-4 max-w-xs truncate text-flame-700" title={p.scenario}>{p.scenario}</td>
-                    <td className="py-2.5 px-4 font-bold text-flame-900">{p.overallScore}</td>
+                    <td className="py-2.5 px-4 text-ink">{p.category}</td>
+                    <td className="py-2.5 px-4 max-w-xs truncate text-ink-soft" title={p.scenario}>{p.scenario}</td>
+                    <td className="py-2.5 px-4 font-bold text-ink">{p.overallScore}</td>
                     <td className="py-2.5 px-4">
                       <span className={`badge ${ratingBadgeClass(p.rating)}`}>{p.rating || 'Unrated'}</span>
                     </td>
@@ -191,6 +161,12 @@ export default function Prompts() {
             </table>
           </div>
         )}
+
+        {error && !loading && (
+          <p className="mt-4 text-sm text-brand-text" role="alert">{error}</p>
+        )}
+
+        <Pagination pagination={pagination} onPage={setPage} loading={loading} />
       </div>
     </div>
   );
@@ -205,7 +181,7 @@ function SortHeader({ label, colKey, sortBy, sortDir, onClick }) {
       type="button"
       onClick={() => onClick(colKey)}
       className={`inline-flex items-center gap-1 transition-colors ${
-        active ? 'text-flame-900' : 'text-flame-400 hover:text-flame-700'
+        active ? 'text-ink' : 'text-brand-text hover:text-ink-soft'
       }`}
       title={`Sort by ${label} — click cycles ascending → descending → off`}
       aria-label={`Sort by ${label}, currently ${stateLabel}`}

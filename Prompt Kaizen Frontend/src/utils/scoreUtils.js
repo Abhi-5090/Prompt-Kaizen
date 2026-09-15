@@ -26,9 +26,9 @@ export function ratingFromScore(score) {
  *  - Low (< 5): dark warm brown, peach text. Inverted ("needs attention").
  */
 export function heatmapClass(scaledScore) {
-  if (scaledScore >= 8) return 'bg-flame-500 text-white ring-1 ring-flame-600 shadow-[0_8px_24px_-12px_rgba(241,93,35,0.55)]';
-  if (scaledScore >= 5) return 'bg-cream-200 text-flame-900 ring-1 ring-cream-400';
-  return 'bg-flame-900 text-cream-200 ring-1 ring-flame-700';
+  if (scaledScore >= 8) return 'bg-brand text-brand-fg ring-1 ring-brand shadow-[0_8px_24px_-12px_rgba(241,93,35,0.55)]';
+  if (scaledScore >= 5) return 'bg-surface-sunken text-ink ring-1 ring-line';
+  return 'bg-panel text-panel-soft ring-1 ring-ink-soft';
 }
 
 export function normalizeToTen(score, max) {
@@ -42,15 +42,15 @@ export function normalizeToTen(score, max) {
 export function ratingBadgeClass(rating) {
   switch (rating) {
     case 'Excellent Prompt':
-      return 'bg-flame-900 text-cream-300';
+      return 'bg-panel text-panel-soft';
     case 'Good Prompt':
-      return 'bg-cream-300 text-flame-900';
+      return 'bg-surface-sunken text-ink';
     case 'Average Prompt':
-      return 'bg-cream-100 text-flame-800 border border-cream-200';
+      return 'bg-surface-sunken text-ink border border-line';
     case 'Needs Improvement':
-      return 'bg-white text-flame-900 border border-flame-200';
+      return 'bg-surface text-ink border border-line';
     default: // Poor
-      return 'bg-flame-900 text-cream-200 border border-flame-700';
+      return 'bg-panel text-panel-soft border border-panel';
   }
 }
 
@@ -58,8 +58,8 @@ export function ratingBadgeClass(rating) {
  * For a fractional progress (0..1), pick a bar color.
  */
 export function progressBarClass(ratio) {
-  if (ratio >= 0.75) return 'bg-flame-500';
-  if (ratio >= 0.5)  return 'bg-flame-500/85';
-  if (ratio >= 0.25) return 'bg-flame-500/65';
-  return 'bg-flame-500/45';
+  if (ratio >= 0.75) return 'bg-brand';
+  if (ratio >= 0.5)  return 'bg-brand/85';
+  if (ratio >= 0.25) return 'bg-brand/65';
+  return 'bg-brand/45';
 }

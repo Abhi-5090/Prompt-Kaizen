@@ -1,8 +1,8 @@
 const PromptEvaluation = require('../models/PromptEvaluation');
 const User = require('../models/User');
-const { analyzePrompt } = require('../utils/promptAnalyzer');
-const { generateImprovedPrompt } = require('../utils/generateImprovedPrompt');
-const { getScenario, SCENARIO_BANK } = require('../utils/scenarioBank');
+const { evaluatePrompt } = require('../utils/llmAnalyzer');
+const { getScenario, SCENARIO_BANK, scenarioId, getScenarioById, isKnownScenario } = require('../utils/scenarioBank');
+const { paginate, withSearch } = require('../utils/pagination');
 const { getDailyChallenge, istMidnightToday, isSameIstDay } = require('../utils/dailyChallenge');
 const {
   consumeDictation,
@@ -55,7 +55,12 @@ const getScenarioForCategory = (req, res) => {
     return res.status(400).json({ message: 'Invalid category.' });
   }
   const scenario = getScenario(category, { exclude });
-  return res.json({ category, scenario, total: (SCENARIO_BANK[category] || []).length });
+  return res.json({
+    category,
+    scenario,
+    scenarioId: scenarioId(category, scenario),
+    total: (SCENARIO_BANK[category] || []).length,
+  });
 };
 
 /**
@@ -128,6 +133,29 @@ const analyze = async (req, res) => {
       return res.status(400).json({ message: 'Scenario is too short (min 10 characters).' });
     }
 
+    // Resolve the scenario server-side.
+    //
+    // The scenario was previously taken verbatim from the request body, and
+    // because the rule-based score is largely keyword overlap against it, a
+    // caller could submit a "scenario" identical to their own prompt and score
+    // close to 100. Preferred path is the id issued by /prompts/scenario; the
+    // raw text is still accepted for older clients but must match the bank.
+    let resolvedScenario = scenario;
+    let resolvedCategory = category;
+
+    if (req.body.scenarioId) {
+      const found = getScenarioById(req.body.scenarioId);
+      if (!found) {
+        return res.status(400).json({ message: 'Unknown scenario. Please request a new one.' });
+      }
+      resolvedScenario = found.scenario;
+      resolvedCategory = found.category;
+    } else if (!isKnownScenario(category, scenario)) {
+      return res.status(400).json({
+        message: 'That scenario was not issued by Prompt Kaizen. Please request a scenario before submitting.',
+      });
+    }
+
     const today = istMidnightToday();
 
     // Daily Challenge enforcement runs BEFORE the dictation consume so a user
@@ -137,8 +165,8 @@ const analyze = async (req, res) => {
     if (isDailyChallenge) {
       const challenge = getDailyChallenge();
       if (
-        challenge.category !== category ||
-        String(challenge.scenario).trim() !== String(scenario).trim()
+        challenge.category !== resolvedCategory ||
+        String(challenge.scenario).trim() !== String(resolvedScenario).trim()
       ) {
         return res.status(400).json({
           message: 'Submitted scenario does not match today\'s Daily Challenge.',
@@ -193,13 +221,20 @@ const analyze = async (req, res) => {
       }
     }
 
-    const analysis = analyzePrompt({ category, scenario, userPrompt });
-    const improvedPrompt = generateImprovedPrompt({ category, scenario });
+    // Hybrid evaluation: rule-based scoring always runs as the floor, and the
+    // LLM layer refines it when configured. evaluatePrompt never throws — a
+    // vendor outage degrades the insight, not the request.
+    const analysis = await evaluatePrompt({
+      category: resolvedCategory,
+      scenario: resolvedScenario,
+      userPrompt,
+    });
+    const improvedPrompt = analysis.improvedPrompt;
 
     const doc = await PromptEvaluation.create({
       userId: req.user._id,
-      category,
-      scenario,
+      category: resolvedCategory,
+      scenario: resolvedScenario,
       userPrompt,
       scores: analysis.scores,
       overallScore: analysis.overallScore,
@@ -211,6 +246,8 @@ const analyze = async (req, res) => {
       improvedPrompt,
       isDailyChallenge: !!isDailyChallenge,
       challengeDate: isDailyChallenge ? today : null,
+      scoredBy: analysis.meta?.source || 'rules',
+      scoringModel: analysis.meta?.model || null,
     });
 
     // No req.user.save() here — both counter writes (daily challenge,
@@ -227,18 +264,18 @@ const analyze = async (req, res) => {
   }
 };
 
-// Cap a single user's history fetch at the most recent 500 evaluations.
-// In practice no UI surfaces beyond that, and capping prevents a heavy user
-// from pulling 10k+ docs in a single request.
-const USER_HISTORY_LIMIT = 500;
-
 const history = async (req, res) => {
   try {
-    const items = await PromptEvaluation.find({ userId: req.user._id })
-      .sort({ createdAt: -1 })
-      .limit(USER_HISTORY_LIMIT)
-      .lean();
-    return res.json({ items });
+    const base = { userId: req.user._id };
+    if (req.query.category) base.category = req.query.category;
+    const filter = withSearch(base, req.query.search, ['scenario', 'userPrompt']);
+
+    const { items, pagination } = await paginate(PromptEvaluation, {
+      filter,
+      sort: { createdAt: -1 },
+      query: req.query,
+    });
+    return res.json({ items, pagination });
   } catch (err) {
     console.error('history error:', err);
     return res.status(500).json({ message: 'Failed to load history.' });

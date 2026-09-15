@@ -14,8 +14,8 @@ export default function ChartCard({ title, subtitle, Icon, children, action }) {
             <span className="stat-icon"><Icon className="w-5 h-5" strokeWidth={2} /></span>
           ) : null}
           <div className="min-w-0">
-            <h3 className="font-semibold text-flame-900 truncate">{title}</h3>
-            {subtitle ? <p className="text-xs text-flame-400 mt-0.5">{subtitle}</p> : null}
+            <h3 className="font-semibold text-ink truncate">{title}</h3>
+            {subtitle ? <p className="text-xs text-brand-text mt-0.5">{subtitle}</p> : null}
           </div>
         </div>
         {action}

@@ -11,9 +11,9 @@ import ScoreCard from '../components/ScoreCard.jsx';
 import { useDialog } from '../components/Dialog.jsx';
 
 const STATUS_BADGE = {
-  draft:     'bg-white text-flame-700 border border-flame-200',
-  published: 'bg-cream-300 text-flame-900',
-  closed:    'bg-flame-900 text-cream-200',
+  draft:     'bg-surface text-ink-soft border border-line',
+  published: 'bg-surface-sunken text-ink',
+  closed:    'bg-panel text-panel-soft',
 };
 
 export default function Contests() {
@@ -81,8 +81,8 @@ export default function Contests() {
       >
         <div>
           <span className="chip"><Trophy className="w-3.5 h-3.5" /> Weekly tests</span>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-flame-900">Contests</h1>
-          <p className="text-flame-500 text-sm">
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink">Contests</h1>
+          <p className="text-brand-text text-sm">
             Schedule a contest, define scenarios, and upload the allowlist of participants.
           </p>
         </div>
@@ -108,16 +108,16 @@ export default function Contests() {
         {loading ? (
           <div className="p-6 space-y-2 animate-pulse">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-14 rounded-xl bg-cream-100" />
+              <div key={i} className="h-14 rounded-xl bg-surface-sunken" />
             ))}
           </div>
         ) : contests.length === 0 ? (
           <div className="p-12 text-center">
-            <div className="mx-auto w-12 h-12 rounded-2xl bg-cream-100 text-flame-900 flex items-center justify-center">
+            <div className="mx-auto w-12 h-12 rounded-2xl bg-surface-sunken text-ink flex items-center justify-center">
               <Inbox className="w-6 h-6" />
             </div>
-            <p className="mt-3 font-semibold text-flame-900">No contests yet</p>
-            <p className="text-sm text-flame-500 mt-1">
+            <p className="mt-3 font-semibold text-ink">No contests yet</p>
+            <p className="text-sm text-brand-text mt-1">
               Click <span className="font-semibold">New Contest</span> to schedule the first one.
             </p>
           </div>
@@ -125,7 +125,7 @@ export default function Contests() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-flame-400 border-b border-flame-50 bg-cream-50">
+                <tr className="text-left text-brand-text border-b border-line bg-surface">
                   <th className="py-2 px-4 text-[11px] uppercase tracking-wider font-semibold">Title</th>
                   <th className="py-2 px-4 text-[11px] uppercase tracking-wider font-semibold">Scheduled (IST)</th>
                   <th className="py-2 px-4 text-[11px] uppercase tracking-wider font-semibold">Scenarios</th>
@@ -141,24 +141,24 @@ export default function Contests() {
                     key={c._id}
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                     transition={{ duration: 0.2, delay: i * 0.02 }}
-                    className="border-b border-flame-50/60 hover:bg-cream-50/60 transition"
+                    className="border-b border-line/60 hover:bg-surface/60 transition"
                   >
-                    <td className="py-2.5 px-4 font-semibold text-flame-900">
+                    <td className="py-2.5 px-4 font-semibold text-ink">
                       <div className="flex items-center gap-2">
-                        <Trophy className="w-3.5 h-3.5 text-flame-700" />
+                        <Trophy className="w-3.5 h-3.5 text-ink-soft" />
                         {c.title}
                       </div>
                       {c.description ? (
-                        <p className="text-xs text-flame-500 mt-0.5 max-w-md truncate">{c.description}</p>
+                        <p className="text-xs text-brand-text mt-0.5 max-w-md truncate">{c.description}</p>
                       ) : null}
                     </td>
-                    <td className="py-2.5 px-4 text-flame-800 whitespace-nowrap">
+                    <td className="py-2.5 px-4 text-ink whitespace-nowrap">
                       <span className="inline-flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-flame-700" />
+                        <Calendar className="w-3.5 h-3.5 text-ink-soft" />
                         {new Date(c.scheduledDate).toLocaleDateString(undefined, { timeZone: 'Asia/Kolkata' })}
                       </span>
                       {c.startsAt && c.endsAt ? (
-                        <p className="text-[10px] text-flame-500 mt-0.5 inline-flex items-center gap-1 tabular-nums">
+                        <p className="text-[10px] text-brand-text mt-0.5 inline-flex items-center gap-1 tabular-nums">
                           <Clock className="w-3 h-3" />
                           {new Date(c.startsAt).toLocaleTimeString(undefined, { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false })}
                           {' – '}
@@ -166,14 +166,14 @@ export default function Contests() {
                         </p>
                       ) : null}
                     </td>
-                    <td className="py-2.5 px-4 text-flame-700 font-semibold">{c.scenariosCount}</td>
-                    <td className="py-2.5 px-4 text-flame-700">
+                    <td className="py-2.5 px-4 text-ink-soft font-semibold">{c.scenariosCount}</td>
+                    <td className="py-2.5 px-4 text-ink-soft">
                       <span className="inline-flex items-center gap-1.5">
                         <UsersIcon className="w-3.5 h-3.5" /> {c.allowedCount}
                       </span>
                     </td>
-                    <td className="py-2.5 px-4 text-flame-700">
-                      {c.submittedCount}<span className="text-flame-300"> / {c.allowedCount}</span>
+                    <td className="py-2.5 px-4 text-ink-soft">
+                      {c.submittedCount}<span className="text-ink-faint"> / {c.allowedCount}</span>
                     </td>
                     <td className="py-2.5 px-4">
                       <span className={`badge ${STATUS_BADGE[c.status] || ''}`}>{c.status}</span>

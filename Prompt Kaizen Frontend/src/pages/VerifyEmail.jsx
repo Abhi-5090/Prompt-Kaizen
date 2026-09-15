@@ -115,13 +115,13 @@ export default function VerifyEmail() {
   return (
     <div className="min-h-[calc(100vh-4rem)] grid lg:grid-cols-2">
       {/* Brand panel */}
-      <div className="hidden lg:flex relative items-center justify-center bg-flame-900 text-cream-100 overflow-hidden">
+      <div className="hidden lg:flex relative items-center justify-center bg-panel text-panel-fg overflow-hidden">
         <div className="absolute inset-0 bg-mesh opacity-40" />
         <div
           className="absolute inset-0 opacity-[0.07]"
           style={{
             backgroundImage:
-              'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.6) 1px, transparent 0)',
+              'radial-gradient(circle at 1px 1px, rgb(var(--panel-fg) / 0.6) 1px, transparent 0)',
             backgroundSize: '22px 22px',
           }}
         />
@@ -132,10 +132,10 @@ export default function VerifyEmail() {
           className="relative max-w-md p-10"
         >
           <Logo size="lg" />
-          <h2 className="mt-6 text-3xl font-bold tracking-tight text-cream-100 text-balance">
+          <h2 className="mt-6 text-3xl font-bold tracking-tight text-panel-fg text-balance">
             One last step — verify your email.
           </h2>
-          <p className="mt-3 text-cream-200/70 leading-relaxed">
+          <p className="mt-3 text-panel-soft/70 leading-relaxed">
             We sent a 6-digit code to your inbox. Enter it on the right to
             unlock your dashboard and start scoring prompts.
           </p>
@@ -152,10 +152,10 @@ export default function VerifyEmail() {
                 transition={{ delay: 0.2 + i * 0.08 }}
                 className="flex items-start gap-3"
               >
-                <span className="mt-0.5 w-7 h-7 rounded-lg bg-cream-300 text-flame-900 flex items-center justify-center">
+                <span className="mt-0.5 w-7 h-7 rounded-lg bg-surface-sunken text-ink flex items-center justify-center">
                   <t.Icon className="w-4 h-4" />
                 </span>
-                <span className="text-cream-100/90">{t.label}</span>
+                <span className="text-panel-fg/90">{t.label}</span>
               </motion.li>
             ))}
           </ul>
@@ -163,7 +163,7 @@ export default function VerifyEmail() {
       </div>
 
       {/* Form */}
-      <div className="flex items-center justify-center px-4 py-10 bg-cream-50/40">
+      <div className="flex items-center justify-center px-4 py-10 bg-surface/40">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -173,18 +173,18 @@ export default function VerifyEmail() {
           <div className="card p-8">
             <Link
               to="/register"
-              className="inline-flex items-center gap-1 text-xs uppercase tracking-wider font-semibold text-flame-400 hover:text-flame-900 transition"
+              className="inline-flex items-center gap-1 text-xs uppercase tracking-wider font-semibold text-brand-text hover:text-ink transition"
             >
               <ArrowLeft className="w-3.5 h-3.5" /> Back
             </Link>
-            <div className="mt-2 flex items-center gap-2 text-flame-700">
-              <ShieldCheck className="w-4 h-4 text-flame-500" />
+            <div className="mt-2 flex items-center gap-2 text-ink-soft">
+              <ShieldCheck className="w-4 h-4 text-brand-text" />
               <span className="text-xs uppercase tracking-[0.18em] font-semibold">Verify email</span>
             </div>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-flame-900">Enter your code</h1>
-            <p className="text-sm text-flame-500 mt-1">
+            <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink">Enter your code</h1>
+            <p className="text-sm text-brand-text mt-1">
               We sent a {OTP_LENGTH}-digit code to{' '}
-              <span className="font-semibold text-flame-900 break-all">{email}</span>.
+              <span className="font-semibold text-ink break-all">{email}</span>.
               It expires in {initialTtl} minutes.
             </p>
 
@@ -202,7 +202,7 @@ export default function VerifyEmail() {
                     pattern="[0-9]*"
                     maxLength={1}
                     aria-label={`Digit ${i + 1} of ${OTP_LENGTH}`}
-                    className="w-12 h-14 text-center text-2xl font-bold tabular-nums rounded-xl border border-flame-300 bg-white text-flame-900 focus:outline-none focus:border-flame-500 focus:ring-4 focus:ring-flame-300/40 transition-all"
+                    className="w-12 h-14 text-center text-2xl font-bold tabular-nums rounded-xl border border-line-strong bg-surface text-ink focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/40 transition-all"
                   />
                 ))}
               </div>
@@ -222,12 +222,12 @@ export default function VerifyEmail() {
             </form>
 
             <div className="mt-6 flex items-center justify-between text-sm">
-              <span className="text-flame-500">Didn&apos;t get the code?</span>
+              <span className="text-brand-text">Didn&apos;t get the code?</span>
               <button
                 type="button"
                 onClick={onResend}
                 disabled={resending || resendCooldown > 0}
-                className="inline-flex items-center gap-1.5 font-semibold text-flame-900 hover:text-flame-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1.5 font-semibold text-ink hover:text-brand-text transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {resending ? (
                   <><Loader2 className="w-3.5 h-3.5 animate-spin-slow" /> Sending…</>
@@ -239,9 +239,9 @@ export default function VerifyEmail() {
               </button>
             </div>
 
-            <p className="mt-6 text-[11px] text-flame-400">
+            <p className="mt-6 text-[11px] text-brand-text">
               Wrong email?{' '}
-              <Link to="/register" className="font-semibold text-flame-900 underline-offset-4 hover:underline">
+              <Link to="/register" className="font-semibold text-ink underline-offset-4 hover:underline">
                 Go back and re-register
               </Link>
             </p>

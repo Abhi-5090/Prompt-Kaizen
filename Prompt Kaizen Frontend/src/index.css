@@ -1,5 +1,7 @@
 @import url('https://rsms.me/inter/inter.css');
 
+@import './styles/tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,78 +11,115 @@
 html, body, #root { height: 100%; }
 
 body {
-  @apply text-flame-900 bg-cream-50/40 antialiased;
+  @apply text-ink bg-canvas antialiased;
   font-feature-settings: 'cv11', 'ss01', 'ss03';
 }
 
-::selection { background: theme('colors.flame.500'); color: theme('colors.cream.50'); }
+::selection { background: rgb(var(--brand)); color: rgb(var(--brand-fg)); }
 
-/* Scrollbar */
+/* Scrollbar. `color-scheme` on :root already re-themes the native scrollbar in
+   Firefox and Safari; this styles the WebKit one to match the surface. */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: theme('colors.flame.100'); border-radius: 8px; }
-::-webkit-scrollbar-thumb:hover { background: theme('colors.flame.200'); }
+::-webkit-scrollbar-thumb { background: rgb(var(--border)); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--border-strong)); }
+
+/* Visible keyboard focus everywhere, without showing a ring on mouse clicks.
+   The component classes below override this where a custom ring is defined. */
+:focus-visible {
+  outline: 2px solid rgb(var(--brand));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Respect a reduced-motion preference. The UI leans on Framer Motion for route
+   transitions, stagger and layout animation; for someone who gets motion sick,
+   all of that becomes a hazard rather than polish. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Theme changes are instant by default; a brief tint fade makes the toggle feel
+   deliberate instead of like a flash. Only colour properties transition, so
+   layout is untouched. */
+[data-theme-transition] * {
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+}
 
 /* ---------- Components ---------- */
 
 @layer components {
   .card {
-    @apply bg-white rounded-2xl shadow-soft border border-flame-50 transition-shadow;
+    @apply bg-surface rounded-2xl shadow-soft border border-line transition-shadow;
   }
   .card-hover {
-    @apply hover:shadow-[0_18px_50px_-18px_rgba(33,37,41,0.25)] hover:-translate-y-0.5 transition-all duration-300;
+    @apply hover:shadow-[0_18px_50px_-18px_rgb(var(--shadow-strength))] hover:-translate-y-0.5 transition-all duration-300;
   }
 
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed select-none;
   }
   .btn-primary {
-    @apply btn bg-flame-500 text-white hover:bg-flame-600 hover:shadow-[0_10px_30px_-10px_rgba(241,93,35,0.6)] focus:outline-none focus:ring-4 focus:ring-flame-300/50;
+    @apply btn bg-brand text-brand-fg hover:bg-brand-hover focus:outline-none focus-visible:ring-4 focus-visible:ring-brand/40;
   }
   .btn-cream {
-    @apply btn bg-cream-100 text-flame-900 hover:bg-cream-200 hover:shadow-[0_10px_30px_-10px_rgba(255,255,255,0.9)] focus:outline-none focus:ring-4 focus:ring-flame-300/40;
+    @apply btn bg-surface-sunken text-ink hover:bg-line focus:outline-none focus-visible:ring-4 focus-visible:ring-brand/30;
   }
   .btn-ghost {
-    @apply btn bg-white text-flame-900 border border-flame-100 hover:border-flame-500 hover:bg-cream-50 focus:outline-none focus:ring-4 focus:ring-flame-300/30;
+    @apply btn bg-surface text-ink border border-line hover:border-brand hover:bg-surface-sunken focus:outline-none focus-visible:ring-4 focus-visible:ring-brand/30;
   }
   .btn-danger {
-    @apply btn bg-white text-flame-900 border border-flame-100 hover:bg-flame-900 hover:text-cream-100 hover:border-flame-900 px-3 py-1.5 text-xs;
+    @apply btn bg-surface text-ink border border-line hover:bg-danger hover:text-brand-fg hover:border-danger px-3 py-1.5 text-xs;
   }
 
   .input {
-    @apply w-full rounded-xl border border-flame-100 bg-white px-3.5 py-2.5 text-sm text-flame-900 placeholder:text-flame-300
+    @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-faint
            transition-all duration-200
-           focus:outline-none focus:border-flame-500 focus:ring-4 focus:ring-flame-300/40;
+           focus:outline-none focus:border-brand focus-visible:ring-4 focus-visible:ring-brand/30;
   }
   .input:disabled {
-    @apply bg-cream-50/50 text-flame-300 cursor-not-allowed;
+    @apply bg-surface-sunken text-ink-faint cursor-not-allowed;
   }
 
   .label {
-    @apply block text-xs font-semibold uppercase tracking-wider text-flame-500 mb-1.5;
+    @apply block text-xs font-semibold uppercase tracking-wider text-ink-muted mb-1.5;
   }
 
   .badge {
     @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide;
   }
-  .badge-cream  { @apply badge bg-cream-100 text-flame-800 border border-cream-200; }
-  .badge-flame   { @apply badge bg-flame-900 text-cream-100; }
-  .badge-ghost { @apply badge bg-white text-flame-700 border border-flame-100; }
+  .badge-cream { @apply badge bg-surface-sunken text-ink-soft border border-line; }
+  .badge-flame { @apply badge bg-panel text-panel-fg; }
+  .badge-ghost { @apply badge bg-surface text-ink-soft border border-line; }
 
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium bg-cream-100 text-flame-800 border border-cream-200;
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium bg-surface-sunken text-ink-soft border border-line;
   }
 
   .stat-icon {
-    @apply w-10 h-10 rounded-xl bg-cream-100 text-flame-900 flex items-center justify-center;
+    @apply w-10 h-10 rounded-xl bg-surface-sunken text-ink flex items-center justify-center;
   }
 
   .section-title {
-    @apply text-2xl sm:text-3xl font-semibold tracking-tight text-flame-900;
+    @apply text-2xl sm:text-3xl font-semibold tracking-tight text-ink;
   }
 
   .glass {
-    @apply backdrop-blur-md bg-white/70 border border-white/60;
+    @apply backdrop-blur-md bg-surface/70 border border-line;
+  }
+
+  /* Skip link: first thing in the tab order, invisible until focused. Without
+     it a keyboard user must tab through the entire nav on every page. */
+  .skip-link {
+    @apply sr-only;
+  }
+  .skip-link:focus {
+    @apply not-sr-only fixed top-3 left-3 z-[100] px-4 py-2 rounded-xl bg-brand text-brand-fg font-semibold shadow-soft;
   }
 }
 
@@ -89,11 +128,11 @@ body {
 @layer utilities {
   .text-balance { text-wrap: balance; }
   .grid-bg {
-    background-image: theme('backgroundImage.grid-flame');
+    background-image: radial-gradient(circle at 1px 1px, rgb(var(--ink) / 0.06) 1px, transparent 0);
     background-size: 22px 22px;
   }
   .shimmer-bg {
-    background-image: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+    background-image: linear-gradient(90deg, transparent, rgb(var(--surface) / 0.55), transparent);
     background-size: 200% 100%;
   }
 }

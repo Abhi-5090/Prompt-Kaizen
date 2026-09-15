@@ -34,8 +34,8 @@ export default function Contests() {
       >
         <div>
           <span className="chip"><Trophy className="w-3.5 h-3.5" /> Contests</span>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-flame-900">Your contests</h1>
-          <p className="text-flame-500 text-sm">
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink">Your contests</h1>
+          <p className="text-brand-text text-sm">
             Tests you've been invited to. Live contests can be taken today (IST).
           </p>
         </div>
@@ -47,16 +47,16 @@ export default function Contests() {
       {loading ? (
         <div className="space-y-2 animate-pulse">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-24 rounded-2xl bg-cream-50/60" />
+            <div key={i} className="h-24 rounded-2xl bg-surface/60" />
           ))}
         </div>
       ) : contests.length === 0 ? (
         <div className="card p-12 text-center">
-          <div className="mx-auto w-12 h-12 rounded-2xl bg-cream-100 text-flame-900 flex items-center justify-center">
+          <div className="mx-auto w-12 h-12 rounded-2xl bg-surface-sunken text-ink flex items-center justify-center">
             <Inbox className="w-6 h-6" />
           </div>
-          <p className="mt-3 font-semibold text-flame-900">No contests assigned</p>
-          <p className="text-sm text-flame-500 mt-1">
+          <p className="mt-3 font-semibold text-ink">No contests assigned</p>
+          <p className="text-sm text-brand-text mt-1">
             You'll see contests here once an admin adds your email to one.
           </p>
         </div>
@@ -112,13 +112,13 @@ function StatsStrip({ stats }) {
 function StatTile({ label, value, suffix, hint, Icon, variant = 'light', delay = 0 }) {
   // Same rule as ScoreCard: value dark, /100 suffix orange, icon orange.
   const cardClasses = {
-    light: 'bg-white border-cream-400 text-flame-900',
-    flame: 'bg-flame-900 border-flame-900 text-cream-100',
-    cream: 'bg-cream-200 border-cream-400 text-flame-900',
+    light: 'bg-surface border-line text-ink',
+    flame: 'bg-panel border-panel text-panel-fg',
+    cream: 'bg-surface-sunken border-line text-ink',
   }[variant];
-  const labelClr  = variant === 'flame' ? 'text-cream-300' : 'text-cream-700';
-  const suffixClr = variant === 'flame' ? 'text-cream-300' : 'text-flame-500';
-  const iconBox   = 'bg-flame-500 text-white';
+  const labelClr  = variant === 'flame' ? 'text-panel-soft' : 'text-ink-muted';
+  const suffixClr = variant === 'flame' ? 'text-panel-soft' : 'text-brand-text';
+  const iconBox   = 'bg-brand text-brand-fg';
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
@@ -149,7 +149,7 @@ function Section({ title, Icon, items, live, muted }) {
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <span className="stat-icon"><Icon className="w-5 h-5" /></span>
-        <h3 className="font-semibold text-flame-900">{title}</h3>
+        <h3 className="font-semibold text-ink">{title}</h3>
         <span className="badge-cream ml-auto">{items.length}</span>
       </div>
       <div className="grid lg:grid-cols-2 gap-3">
@@ -171,23 +171,23 @@ function ContestCard({ c, live, muted, delay }) {
   const dark = live || muted;
 
   const cardClass = live
-    ? 'bg-flame-500 text-white border-flame-600 shadow-[0_18px_40px_-18px_rgba(241,93,35,0.5)]'
+    ? 'bg-brand text-brand-fg border-brand shadow-[0_18px_40px_-18px_rgb(var(--brand)/0.5)]'
     : muted
-      ? 'bg-[#212529] text-white border-[#0e1114]'
-      : 'bg-white border-flame-50';
+      ? 'bg-panel text-panel-fg border-panel'
+      : 'bg-surface border-line';
 
   const statusBadge = live
-    ? 'bg-white text-flame-500'
+    ? 'bg-surface text-brand-text'
     : muted
-      ? 'bg-white text-[#212529]'
-      : 'bg-cream-100 text-flame-800 border border-cream-200';
+      ? 'bg-surface text-ink'
+      : 'bg-surface-sunken text-ink border border-line';
 
   const leaderboardPill = dark
-    ? 'bg-white/10 border border-white/30 text-white hover:bg-white/20'
-    : 'bg-cream-100 border border-cream-200 text-flame-800 hover:bg-cream-200';
+    ? 'bg-panel-fg/10 border border-panel-fg/30 text-brand-fg hover:bg-panel-fg/20'
+    : 'bg-surface-sunken border border-line text-ink hover:bg-surface-sunken';
 
-  const secondaryText = dark ? 'text-white/80' : 'text-flame-500';
-  const titleText     = dark ? 'text-white' : 'text-flame-900';
+  const secondaryText = dark ? 'text-brand-fg/80' : 'text-brand-text';
+  const titleText     = dark ? 'text-brand-fg' : 'text-ink';
 
   return (
     <motion.div
@@ -201,7 +201,7 @@ function ContestCard({ c, live, muted, delay }) {
           {live ? 'Live today' : muted ? 'Past' : 'Upcoming'}
         </span>
         {isSubmitted && (
-          <span className="badge bg-white text-flame-500">
+          <span className="badge bg-surface text-brand-text">
             <CheckCircle2 className="w-3 h-3" /> Submitted
           </span>
         )}
@@ -242,7 +242,7 @@ function ContestCard({ c, live, muted, delay }) {
       </div>
       <div className="mt-4 flex items-center justify-end">
         {live && !isSubmitted ? (
-          <Link to={`/contests/${c._id}`} className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold bg-white text-flame-500 hover:bg-cream-100 transition">
+          <Link to={`/contests/${c._id}`} className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold bg-surface text-brand-text hover:bg-surface-sunken transition">
             Take contest <ChevronRight className="w-4 h-4" />
           </Link>
         ) : (
@@ -250,7 +250,7 @@ function ContestCard({ c, live, muted, delay }) {
             to={`/contests/${c._id}`}
             className={
               dark
-                ? 'inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold bg-transparent border border-white/30 text-white hover:bg-white/10 transition'
+                ? 'inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold bg-transparent border border-white/30 text-brand-fg hover:bg-surface/10 transition'
                 : 'btn-ghost text-sm'
             }
           >

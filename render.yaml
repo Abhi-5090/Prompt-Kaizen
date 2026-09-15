@@ -1,0 +1,108 @@
+# Render blueprint for the Prompt Kaizen API.
+#
+# Apply with: Render Dashboard → New → Blueprint, pointed at this repo.
+# The two frontends deploy to Vercel (see each app's vercel.json), so this
+# describes the API only.
+services:
+  - type: web
+    name: prompt-kaizen-api
+    runtime: node
+    plan: starter            # 512 MB / 0.5 CPU. Raise before a contest.
+    region: singapore        # Closest region to an IST-based userbase.
+    rootDir: "Prompt Kaizen Backend"
+    buildCommand: npm ci
+    # cluster.js forks one worker per CPU (or WEB_CONCURRENCY) and restarts
+    # crashed workers. Each worker runs server.js, which handles SIGTERM and
+    # drains in-flight requests before exiting.
+    startCommand: npm start
+
+    # Render sends SIGTERM on deploy and scale-down. server.js drains
+    # connections and closes MongoDB, with a 15s failsafe.
+    healthCheckPath: /api/health
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      # Single vCPU on the starter plan — one worker avoids workers competing
+      # for the same core. Raise this together with the plan.
+      - key: WEB_CONCURRENCY
+        value: "1"
+
+      # --- Secrets: set these in the Render dashboard, never in this file ---
+      - key: MONGO_URI
+        sync: false          # MongoDB Atlas SRV string
+      - key: JWT_SECRET
+        sync: false          # openssl rand -base64 48 — boot fails without it
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASSWORD
+        sync: false          # Gmail app password
+      - key: OPENAI_API_KEY
+        sync: false
+
+      # --- Must match the deployed Vercel domains exactly, or CORS blocks ---
+      - key: CLIENT_URL
+        sync: false          # e.g. https://promptkaizen.vercel.app,https://admin-promptkaizen.vercel.app
+
+      - key: JWT_EXPIRES_IN
+        value: 7d
+
+      # --- Admin seed (npm run seed:admin from the Render shell) ---
+      - key: ADMIN_NAME
+        value: Admin
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_RESET_PASSWORD
+        value: "false"       # true would reset the password on every seed run
+
+      # --- Account security ---
+      - key: MAX_FAILED_LOGINS
+        value: "8"
+      - key: LOCK_MINUTES
+        value: "15"
+      - key: RESET_TTL_MINUTES
+        value: "30"
+      - key: OTP_TTL_MINUTES
+        value: "5"           # 2 min is tight once email delivery latency is real
+
+      # --- Rate limits ---
+      - key: RATE_LIMIT_GENERAL_PER_MIN
+        value: "300"
+      - key: RATE_LIMIT_AUTH_PER_MIN
+        value: "20"
+      - key: RATE_LIMIT_EMAIL_PER_15MIN
+        value: "5"
+      - key: RATE_LIMIT_ANALYZE_PER_MIN
+        value: "20"
+
+      # --- SMTP resilience: without these a stalled mail host holds requests ---
+      - key: SMTP_CONNECTION_TIMEOUT_MS
+        value: "10000"
+      - key: SMTP_GREETING_TIMEOUT_MS
+        value: "10000"
+      - key: SMTP_SOCKET_TIMEOUT_MS
+        value: "15000"
+      - key: SMTP_SEND_TIMEOUT_MS
+        value: "20000"
+
+      # --- LLM scoring: falls back to the rule-based analyzer when off ---
+      - key: LLM_ANALYSIS_ENABLED
+        value: "false"       # flip to "true" once OPENAI_API_KEY is set
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: OPENAI_TIMEOUT_MS
+        value: "12000"
+      - key: OPENAI_MAX_RETRIES
+        value: "1"
+      - key: OPENAI_TOTAL_BUDGET_MS
+        value: "25000"
+
+      # --- Mongo pool. 100 per worker is sized for a multi-core plan; on a
+      # shared Atlas tier the cluster-wide connection cap is the real limit. ---
+      - key: MONGO_POOL_SIZE
+        value: "50"
+      - key: MONGO_MIN_POOL_SIZE
+        value: "5"

@@ -6,7 +6,7 @@ export default function Logo({ size = 'md' }) {
     <motion.div
       whileHover={{ rotate: 6, scale: 1.05 }}
       transition={{ type: 'spring', stiffness: 300, damping: 18 }}
-      className={`${dims} rounded-xl bg-flame-500 text-white flex items-center justify-center shadow-soft`}
+      className={`${dims} rounded-xl bg-brand text-brand-fg flex items-center justify-center shadow-soft`}
       aria-hidden
     >
       <svg viewBox="0 0 24 24" fill="none" className="w-4/5 h-4/5">

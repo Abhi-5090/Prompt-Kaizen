@@ -11,9 +11,9 @@ import { useDialog } from '../components/Dialog.jsx';
 import { ratingBadgeClass } from '../utils/scoreUtils.js';
 
 const STATUS_BADGE = {
-  draft:     'bg-white text-flame-700 border border-flame-200',
-  published: 'bg-cream-300 text-flame-900',
-  closed:    'bg-flame-900 text-cream-200',
+  draft:     'bg-surface text-ink-soft border border-line',
+  published: 'bg-surface-sunken text-ink',
+  closed:    'bg-panel text-panel-soft',
 };
 
 export default function ContestDetail() {
@@ -141,7 +141,7 @@ export default function ContestDetail() {
     }
   };
 
-  if (loading) return <p className="text-flame-500">Loading contest...</p>;
+  if (loading) return <p className="text-brand-text">Loading contest...</p>;
   if (!data) return null;
   const { contest, submissions } = data;
 
@@ -152,14 +152,14 @@ export default function ContestDetail() {
         className="flex flex-wrap items-center justify-between gap-3"
       >
         <div>
-          <Link to="/contests" className="inline-flex items-center gap-1 text-xs uppercase tracking-wider font-semibold text-flame-400 hover:text-flame-900 transition">
+          <Link to="/contests" className="inline-flex items-center gap-1 text-xs uppercase tracking-wider font-semibold text-brand-text hover:text-ink transition">
             <ArrowLeft className="w-3.5 h-3.5" /> Back to contests
           </Link>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-flame-900 flex items-center gap-3">
+          <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink flex items-center gap-3">
             {contest.title}
             <span className={`badge ${STATUS_BADGE[contest.status]}`}>{contest.status}</span>
           </h1>
-          <p className="text-flame-500 text-sm">{contest.description || 'No description provided.'}</p>
+          <p className="text-brand-text text-sm">{contest.description || 'No description provided.'}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {contest.status !== 'closed' && (
@@ -210,8 +210,8 @@ export default function ContestDetail() {
           <div className="flex items-center gap-2.5">
             <span className="stat-icon"><FileSpreadsheet className="w-5 h-5" /></span>
             <div>
-              <h3 className="font-semibold text-flame-900">Participant allowlist</h3>
-              <p className="text-[11px] uppercase tracking-wider text-flame-400 font-semibold">
+              <h3 className="font-semibold text-ink">Participant allowlist</h3>
+              <p className="text-[11px] uppercase tracking-wider text-brand-text font-semibold">
                 Upload an Excel / CSV file (no headers — one email per row)
               </p>
             </div>
@@ -243,8 +243,8 @@ export default function ContestDetail() {
           </div>
         </div>
         {uploadResult ? (
-          <div className="text-sm text-flame-700">
-            <CheckCircle2 className="inline w-4 h-4 mr-1 text-flame-900" />
+          <div className="text-sm text-ink-soft">
+            <CheckCircle2 className="inline w-4 h-4 mr-1 text-ink" />
             {uploadResult.mode === 'append' ? (
               <>
                 Parsed <span className="font-bold">{uploadResult.parsed}</span> emails ·
@@ -262,11 +262,11 @@ export default function ContestDetail() {
           </div>
         ) : null}
         {contest.allowedEmails?.length > 0 ? (
-          <div className="mt-4 max-h-56 overflow-y-auto rounded-xl border border-flame-50 bg-cream-50/30 p-3 text-xs text-flame-700 leading-relaxed">
+          <div className="mt-4 max-h-56 overflow-y-auto rounded-xl border border-line bg-surface/30 p-3 text-xs text-ink-soft leading-relaxed">
             {contest.allowedEmails.join(' · ')}
           </div>
         ) : (
-          <p className="mt-2 text-sm text-flame-500">
+          <p className="mt-2 text-sm text-brand-text">
             No participants added yet — upload a file to make this contest available to users.
           </p>
         )}
@@ -276,16 +276,16 @@ export default function ContestDetail() {
       <div className="card p-6">
         <div className="flex items-center gap-2.5 mb-3">
           <span className="stat-icon"><Trophy className="w-5 h-5" /></span>
-          <h3 className="font-semibold text-flame-900">Scenarios ({contest.scenarios?.length || 0})</h3>
+          <h3 className="font-semibold text-ink">Scenarios ({contest.scenarios?.length || 0})</h3>
         </div>
         <ol className="space-y-3">
           {(contest.scenarios || []).map((s, i) => (
-            <li key={i} className="rounded-xl border border-flame-50 p-4 bg-cream-50/30">
+            <li key={i} className="rounded-xl border border-line p-4 bg-surface/30">
               <div className="flex items-center gap-2 mb-2">
-                <span className="badge bg-flame-900 text-cream-300">Q{i + 1}</span>
-                <span className="badge bg-white text-flame-700 border border-flame-100">{s.category}</span>
+                <span className="badge bg-panel text-panel-soft">Q{i + 1}</span>
+                <span className="badge bg-surface text-ink-soft border border-line">{s.category}</span>
               </div>
-              <p className="text-sm text-flame-800 whitespace-pre-wrap">{s.scenario}</p>
+              <p className="text-sm text-ink whitespace-pre-wrap">{s.scenario}</p>
             </li>
           ))}
         </ol>
@@ -300,12 +300,12 @@ export default function ContestDetail() {
 function InfoCard({ label, value, Icon }) {
   return (
     <div className="card p-4 flex items-center gap-3">
-      <div className="w-10 h-10 rounded-xl bg-cream-100 text-flame-900 flex items-center justify-center">
+      <div className="w-10 h-10 rounded-xl bg-surface-sunken text-ink flex items-center justify-center">
         <Icon className="w-5 h-5" />
       </div>
       <div>
-        <p className="text-[11px] uppercase tracking-wider font-semibold text-flame-400">{label}</p>
-        <p className="font-semibold text-flame-900">{value}</p>
+        <p className="text-[11px] uppercase tracking-wider font-semibold text-brand-text">{label}</p>
+        <p className="font-semibold text-ink">{value}</p>
       </div>
     </div>
   );
@@ -318,8 +318,8 @@ function SubmissionsTable({ submissions, totalScenarios }) {
         <div className="flex items-center gap-2.5">
           <span className="stat-icon"><ShieldCheck className="w-5 h-5" /></span>
           <div>
-            <h3 className="font-semibold text-flame-900">Submissions</h3>
-            <p className="text-[11px] uppercase tracking-wider text-flame-400 font-semibold">
+            <h3 className="font-semibold text-ink">Submissions</h3>
+            <p className="text-[11px] uppercase tracking-wider text-brand-text font-semibold">
               Ranked by average score
             </p>
           </div>
@@ -327,14 +327,14 @@ function SubmissionsTable({ submissions, totalScenarios }) {
         <span className="badge-cream">{submissions.length}</span>
       </div>
       {submissions.length === 0 ? (
-        <div className="p-8 text-center text-sm text-flame-500">
+        <div className="p-8 text-center text-sm text-brand-text">
           No submissions yet.
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-flame-400 border-b border-flame-50 bg-cream-50/40">
+              <tr className="text-left text-brand-text border-b border-line bg-surface/40">
                 <th className="py-2 px-4 text-[11px] uppercase tracking-wider font-semibold">Rank</th>
                 <th className="py-2 px-4 text-[11px] uppercase tracking-wider font-semibold">Participant</th>
                 <th className="py-2 px-4 text-[11px] uppercase tracking-wider font-semibold">Average</th>
@@ -349,25 +349,25 @@ function SubmissionsTable({ submissions, totalScenarios }) {
                   key={s._id}
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                   transition={{ duration: 0.2, delay: i * 0.02 }}
-                  className="border-b border-flame-50/60 hover:bg-cream-50/60 transition"
+                  className="border-b border-line/60 hover:bg-surface/60 transition"
                 >
-                  <td className="py-2.5 px-4 font-semibold text-flame-900">#{i + 1}</td>
+                  <td className="py-2.5 px-4 font-semibold text-ink">#{i + 1}</td>
                   <td className="py-2.5 px-4">
-                    <p className="font-medium text-flame-900">{s.userId?.name || '—'}</p>
-                    <p className="text-xs text-flame-500">{s.userId?.email}</p>
+                    <p className="font-medium text-ink">{s.userId?.name || '—'}</p>
+                    <p className="text-xs text-brand-text">{s.userId?.email}</p>
                   </td>
-                  <td className="py-2.5 px-4 font-bold text-flame-900">
-                    {s.averageScore}<span className="text-flame-400 text-xs">/100</span>
+                  <td className="py-2.5 px-4 font-bold text-ink">
+                    {s.averageScore}<span className="text-brand-text text-xs">/100</span>
                   </td>
-                  <td className="py-2.5 px-4 text-flame-700">
+                  <td className="py-2.5 px-4 text-ink-soft">
                     {(s.answers || []).filter((a) => (a.userPrompt || '').trim().length).length} / {totalScenarios}
                   </td>
                   <td className="py-2.5 px-4">
-                    <span className={`badge ${s.status === 'submitted' ? 'bg-cream-300 text-flame-900' : 'bg-white text-flame-700 border border-flame-200'}`}>
+                    <span className={`badge ${s.status === 'submitted' ? 'bg-surface-sunken text-ink' : 'bg-surface text-ink-soft border border-line'}`}>
                       {s.status}
                     </span>
                   </td>
-                  <td className="py-2.5 px-4 text-flame-500 whitespace-nowrap">
+                  <td className="py-2.5 px-4 text-brand-text whitespace-nowrap">
                     {s.submittedAt
                       ? new Date(s.submittedAt).toLocaleString(undefined, {
                           timeZone: 'Asia/Kolkata',

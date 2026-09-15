@@ -8,9 +8,9 @@ export default function ProtectedRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-flame-500">
+      <div className="min-h-screen flex items-center justify-center text-brand-text">
         <div className="flex items-center gap-3">
-          <Loader2 className="w-5 h-5 animate-spin-slow text-flame-900" />
+          <Loader2 className="w-5 h-5 animate-spin-slow text-ink" />
           <span className="text-sm">Loading your workspace…</span>
         </div>
       </div>
