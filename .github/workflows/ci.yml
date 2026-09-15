@@ -55,10 +55,18 @@ jobs:
           find . -name '*.js' -not -path './node_modules/*' -print0 \
             | xargs -0 -n1 node --check
 
-      - name: Start API
+      # The API and the tests are started in ONE step, sharing a single set of
+      # env vars. Previously the API started in its own step against database
+      # `pk_ci` while the suites had `pk_phase1_test` hardcoded — the API
+      # answered 201 while the tests read an empty collection from a different
+      # database. Splitting them across steps also relied on a background
+      # process surviving between steps, which is not guaranteed.
+      - name: Test
         env:
           PORT: 5099
           MONGO_URI: mongodb://127.0.0.1:27055/pk_ci
+          TEST_MONGO_URI: mongodb://127.0.0.1:27055/pk_ci
+          TEST_API_URL: http://127.0.0.1:5099/api
           # Generated per run; never a fixed value, even in CI.
           JWT_SECRET: ${{ github.run_id }}-ci-secret-long-enough-to-pass-validation
           NODE_ENV: development
@@ -71,15 +79,28 @@ jobs:
           # Deliberately no EMAIL_* — mail-resilience.test.js asserts the
           # unconfigured-transport behaviour.
         run: |
-          node server.js &
+          node server.js > /tmp/api.log 2>&1 &
+          API_PID=$!
           for i in $(seq 1 30); do
-            curl -sf http://127.0.0.1:5099/api/health && break
+            curl -sf http://127.0.0.1:5099/api/health >/dev/null && break
             sleep 1
           done
-          curl -sf http://127.0.0.1:5099/api/health || { echo "API failed to start"; exit 1; }
+          if ! curl -sf http://127.0.0.1:5099/api/health >/dev/null; then
+            echo "::error::API failed to start"
+            cat /tmp/api.log
+            exit 1
+          fi
+          echo "API is up; running suites"
+          set +e
+          npm test
+          STATUS=$?
+          set -e
+          kill $API_PID 2>/dev/null || true
+          exit $STATUS
 
-      - name: Test
-        run: npm test
+      - name: API log on failure
+        if: failure()
+        run: cat /tmp/api.log || true
 
   frontends:
     name: ${{ matrix.app }} — build

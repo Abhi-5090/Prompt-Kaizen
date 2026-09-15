@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 const { generateResetToken, hashResetToken } = require('../utils/otp');
-const API='http://127.0.0.1:5099/api', URI='mongodb://127.0.0.1:27055/pk_phase1_test';
+// Endpoints and database under test. Both are overridable so CI can point the
+// suite at the same database the server was started against — hardcoding them
+// let the two drift apart, and the failure mode was silent: the API returned
+// 201 while the test read an empty collection from a different database.
+const API = process.env.TEST_API_URL || 'http://127.0.0.1:5099/api';
+const URI = process.env.TEST_MONGO_URI || 'mongodb://127.0.0.1:27055/pk_phase1_test';
 let pass=0,fail=0;
 const ok=(n,e='')=>{console.log(`  PASS  ${n}${e?' — '+e:''}`);pass++;};
 const bad=(n,e='')=>{console.log(`  FAIL  ${n}${e?' — '+e:''}`);fail++;};
