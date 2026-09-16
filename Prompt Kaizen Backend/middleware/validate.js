@@ -61,6 +61,31 @@ const email = (opts = {}) =>
     patternMessage: 'Please provide a valid email address.',
   });
 
+/**
+ * A sign-in identifier: either a real email address or a short operator
+ * username.
+ *
+ * `User.email` is documented as doubling as the login identifier — real
+ * addresses for self-registered users, plain usernames (e.g. "Admin") for
+ * accounts created by `seed:admin`. Validating the login route with the strict
+ * `email` rule silently locked every operator-seeded account out of the API.
+ *
+ * Registration deliberately keeps the strict rule: self-service signup must
+ * use a deliverable address, both so the OTP arrives and so nobody can squat a
+ * username before the seed runs.
+ *
+ * Still a strict string check, so `{"$ne": ""}` is rejected exactly as before.
+ */
+const loginIdentifier = (opts = {}) =>
+  str({
+    ...opts,
+    lowercase: true,
+    min: 3,
+    max: 254,
+    pattern: /^[^\s@]+(@[^\s@]+)?$/,
+    patternMessage: 'Please provide a valid email address or username.',
+  });
+
 const objectId = (opts = {}) =>
   str({
     ...opts,
@@ -182,7 +207,7 @@ function validate(spec = {}) {
 
 module.exports = {
   validate,
-  rules: { str, email, objectId, isoDate, time, int, bool, arrayOf, shape },
+  rules: { str, email, loginIdentifier, objectId, isoDate, time, int, bool, arrayOf, shape },
   EMAIL_RE,
   OBJECT_ID_RE,
 };

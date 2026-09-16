@@ -38,7 +38,12 @@ export default function Navbar() {
       transition={{ duration: 0.4, ease: 'easeOut' }}
       className="sticky top-0 z-40 glass border-b border-line"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+      {/* Width and padding deliberately mirror AppShell's <main>
+          (max-w-screen-2xl, px-4 sm:px-6 lg:px-10). The bar used to be capped
+          at max-w-7xl, so on a wide screen its contents sat in a narrower box
+          than the page below — the logo and actions were pulled inward and the
+          bar read as centred rather than spanning the layout. */}
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between gap-4">
         <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-2.5 shrink-0">
           <Logo />
           <div className="leading-tight">
@@ -124,7 +129,7 @@ export default function Navbar() {
           exit={{ height: 0, opacity: 0 }}
           className="lg:hidden border-t border-line bg-surface"
         >
-          <div className="px-4 py-3 flex flex-col gap-1">
+          <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-10 py-3 flex flex-col gap-1">
             {links.map((l) => (
               <NavLink
                 key={l.to}

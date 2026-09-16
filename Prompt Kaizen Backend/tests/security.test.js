@@ -128,6 +128,33 @@ async function req(path, opts = {}) {
   r = await req('/auth/me', { headers: auth });
   check('token rejected after tokenVersion bump', 401, r.status, r.body);
 
+  console.log('=== Operator usernames can sign in ===');
+  // `User.email` doubles as the login identifier: real addresses for
+  // self-registered users, plain usernames for accounts created by
+  // `npm run seed:admin`. Validating the login route with the strict email
+  // rule once locked every seeded operator account out of the API, with no
+  // error anywhere except a 400 at sign-in.
+  const bcryptLib = require('bcryptjs');
+  await Users.deleteMany({ email: { $in: ['opuser', 'admin@pk'] } });
+  await Users.insertMany([
+    { name: 'Op', email: 'opuser', password: await bcryptLib.hash('OperatorPass!9', 10),
+      role: 'admin', emailVerified: true, tokenVersion: 0, createdAt: new Date(), updatedAt: new Date() },
+    { name: 'Op2', email: 'admin@pk', password: await bcryptLib.hash('OperatorPass!9', 10),
+      role: 'admin', emailVerified: true, tokenVersion: 0, createdAt: new Date(), updatedAt: new Date() },
+  ]);
+  for (const id of ['opuser', 'OPUSER', 'admin@pk', 'Admin@PK']) {
+    r = await req('/auth/login', { method: 'POST', body: JSON.stringify({ email: id, password: 'OperatorPass!9' }) });
+    check(`login as "${id}"`, 200, r.status, r.body);
+  }
+  // Registration must still demand a deliverable address, so nobody can squat
+  // a username before the seed runs.
+  r = await req('/auth/register', { method: 'POST', body: JSON.stringify({
+    name: 'Squatter', email: 'operator', password: 'Quokka7!Harbour', confirmPassword: 'Quokka7!Harbour' }) });
+  check('registration still rejects a bare username', 400, r.status, r.body);
+  // And the loosened rule must not reopen injection.
+  r = await req('/auth/login', { method: 'POST', body: JSON.stringify({ email: { $ne: '' }, password: { $ne: '' } }) });
+  check('login identifier still rejects a NoSQL operator', 400, r.status);
+
   console.log('=== CORS ===');
   const evil = await fetch(API + '/auth/login', { method:'POST',
     headers:{ 'Content-Type':'application/json', Origin:'https://evil.example.com' },

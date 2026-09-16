@@ -25,7 +25,9 @@ router.post('/register', validate({
 
 router.post('/login', validate({
   body: {
-    email:    emailField,
+    // Accepts an email OR an operator username — see rules.loginIdentifier.
+    // Registration below still requires a real, deliverable address.
+    email:    rules.loginIdentifier({ required: true }),
     // No min length on login — an old account may predate the current policy,
     // and rejecting short input here would leak which passwords are too short.
     password: rules.str({ required: true, max: 200, trim: false }),
