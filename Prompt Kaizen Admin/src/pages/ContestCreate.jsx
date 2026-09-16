@@ -5,7 +5,7 @@ import {
   ArrowLeft, Plus, Trash2, Save, Loader2, Trophy, Calendar, Clock,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../api/axiosInstance.js';
+import api, { errorMessage } from '../api/axiosInstance.js';
 
 const CATEGORIES = [
   'Academic Writing','Email Writing','Resume and LinkedIn','Coding and Debugging',
@@ -70,7 +70,7 @@ export default function ContestCreate() {
       toast.success('Contest created.');
       navigate(`/contests/${data.contest._id}`);
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to create contest.');
+      toast.error(errorMessage(err, 'Failed to create contest.'));
     } finally {
       setSubmitting(false);
     }

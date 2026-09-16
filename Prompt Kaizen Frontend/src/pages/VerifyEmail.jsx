@@ -5,6 +5,7 @@ import { Mail, ShieldCheck, Loader2, RefreshCw, ArrowLeft, Sparkles } from 'luci
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext.jsx';
 import Logo from '../components/Logo.jsx';
+import { errorMessage } from '../api/axiosInstance.js';
 
 const OTP_LENGTH = 6;
 
@@ -88,7 +89,7 @@ export default function VerifyEmail() {
       toast.success('Email verified — welcome!');
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Verification failed.');
+      toast.error(errorMessage(err, 'Verification failed.'));
       setDigits(Array(OTP_LENGTH).fill(''));
       inputsRef.current[0]?.focus();
     } finally {
@@ -106,7 +107,7 @@ export default function VerifyEmail() {
       setDigits(Array(OTP_LENGTH).fill(''));
       inputsRef.current[0]?.focus();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Could not resend the code.');
+      toast.error(errorMessage(err, 'Could not resend the code.'));
     } finally {
       setResending(false);
     }

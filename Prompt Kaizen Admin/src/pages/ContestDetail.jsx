@@ -6,7 +6,7 @@ import {
   CheckCircle2, Lock, Trash2, Upload, Send, ShieldCheck, Pencil,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../api/axiosInstance.js';
+import api, { errorMessage } from '../api/axiosInstance.js';
 import { useDialog } from '../components/Dialog.jsx';
 import { ratingBadgeClass } from '../utils/scoreUtils.js';
 
@@ -33,7 +33,7 @@ export default function ContestDetail() {
     setLoading(true);
     api.get(`/admin/contests/${id}`)
       .then((res) => setData(res.data))
-      .catch((e) => toast.error(e?.response?.data?.message || 'Failed to load contest.'))
+      .catch((e) => toast.error(errorMessage(err, 'Failed to load contest.')))
       .finally(() => setLoading(false));
   };
   useEffect(load, [id]);
@@ -76,7 +76,7 @@ export default function ContestDetail() {
       }
       load();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Upload failed.');
+      toast.error(errorMessage(err, 'Upload failed.'));
     } finally {
       setBusy(false);
     }
@@ -95,7 +95,7 @@ export default function ContestDetail() {
       toast.success('Contest published.');
       load();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to publish.');
+      toast.error(errorMessage(err, 'Failed to publish.'));
     } finally {
       setBusy(false);
     }
@@ -115,7 +115,7 @@ export default function ContestDetail() {
       toast.success('Contest closed.');
       load();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to close.');
+      toast.error(errorMessage(err, 'Failed to close.'));
     } finally {
       setBusy(false);
     }
@@ -135,7 +135,7 @@ export default function ContestDetail() {
       toast.success('Contest deleted.');
       navigate('/contests');
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to delete.');
+      toast.error(errorMessage(err, 'Failed to delete.'));
     } finally {
       setBusy(false);
     }

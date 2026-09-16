@@ -6,7 +6,7 @@ import {
   Copy, Check, ArrowLeft, FileText, GaugeCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../api/axiosInstance.js';
+import api, { errorMessage } from '../api/axiosInstance.js';
 import Heatmap from '../components/Heatmap.jsx';
 import { ratingBadgeClass, PARAMETER_KEYS, progressBarClass } from '../utils/scoreUtils.js';
 
@@ -19,7 +19,7 @@ export default function PromptDetails() {
   useEffect(() => {
     api.get(`/prompts/${id}`)
       .then((res) => setData(res.data.evaluation))
-      .catch((e) => toast.error(e?.response?.data?.message || 'Failed to load prompt.'))
+      .catch((e) => toast.error(errorMessage(err, 'Failed to load prompt.')))
       .finally(() => setLoading(false));
   }, [id]);
 

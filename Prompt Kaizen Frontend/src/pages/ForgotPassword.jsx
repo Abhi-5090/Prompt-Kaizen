@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Loader2, Send, ArrowLeft, MailCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../api/axiosInstance.js';
+import api, { errorMessage } from '../api/axiosInstance.js';
 import AuthShell from '../components/AuthShell.jsx';
 
 export default function ForgotPassword() {
@@ -22,7 +22,7 @@ export default function ForgotPassword() {
       setSent(true);
       setNotice(data?.delivery?.message || null);
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Could not send the reset link.');
+      toast.error(errorMessage(err, 'Could not send the reset link.'));
     } finally {
       setSubmitting(false);
     }

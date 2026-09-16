@@ -5,6 +5,7 @@ import { User, Mail, Lock, Loader2, UserPlus, Eye, EyeOff, Sparkles, Check } fro
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext.jsx';
 import Logo from '../components/Logo.jsx';
+import { errorMessage } from '../api/axiosInstance.js';
 
 export default function Register() {
   const { register } = useAuth();
@@ -40,7 +41,7 @@ export default function Register() {
         state: { email: result.email || form.email.toLowerCase().trim(), otpTtlMinutes: result.otpTtlMinutes },
       });
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Registration failed.');
+      toast.error(errorMessage(err, 'Registration failed.'));
     } finally {
       setSubmitting(false);
     }

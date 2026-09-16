@@ -5,7 +5,7 @@ import {
   Sparkles, Trophy, TrendingDown, TrendingUp, Layers, Flame, Snowflake,
   PlusCircle, ArrowUpRight, ChevronRight, Inbox, Activity,
 } from 'lucide-react';
-import api from '../api/axiosInstance.js';
+import api, { errorMessage } from '../api/axiosInstance.js';
 import ScoreCard from '../components/ScoreCard.jsx';
 import Heatmap from '../components/Heatmap.jsx';
 import ChartCard from '../components/ChartCard.jsx';
@@ -31,7 +31,7 @@ export default function Dashboard() {
     let mounted = true;
     api.get('/dashboard/stats')
       .then((res) => mounted && setData(res.data))
-      .catch((e) => setError(e?.response?.data?.message || 'Failed to load dashboard.'))
+      .catch((e) => setError(errorMessage(err, 'Failed to load dashboard.')))
       .finally(() => setLoading(false));
     return () => { mounted = false; };
   }, []);

@@ -5,6 +5,7 @@ import { Mail, Lock, Loader2, LogIn, Eye, EyeOff, ShieldCheck, KeyRound } from '
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext.jsx';
 import Logo from '../components/Logo.jsx';
+import { errorMessage } from '../api/axiosInstance.js';
 
 export default function Login() {
   const { login } = useAuth();
@@ -28,7 +29,7 @@ export default function Login() {
     } catch (err) {
       toast.error(err?.code === 'NOT_ADMIN'
         ? 'This account does not have admin privileges.'
-        : err?.response?.data?.message || 'Login failed.');
+        : errorMessage(err, 'Login failed.'));
     } finally {
       setSubmitting(false);
     }

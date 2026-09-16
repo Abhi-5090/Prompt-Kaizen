@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import api from '../api/axiosInstance.js';
+import api, { errorMessage } from '../api/axiosInstance.js';
 
 /**
  * Server-paginated, server-searched list.
@@ -63,7 +63,7 @@ export function usePaginatedList(endpoint, { limit = 25, extraParams = {}, debou
       setMeta(data.meta || {});
     } catch (err) {
       if (err?.code === 'ERR_CANCELED' || err?.name === 'CanceledError') return;
-      setError(err?.response?.data?.message || 'Failed to load.');
+      setError(errorMessage(err, 'Failed to load.'));
     } finally {
       // Only the newest request clears the spinner, so an aborted one can't
       // leave the table looking settled while a newer fetch is still running.

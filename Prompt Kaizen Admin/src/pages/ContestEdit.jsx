@@ -5,7 +5,7 @@ import {
   ArrowLeft, Plus, Trash2, Save, Loader2, Trophy, Calendar, Clock,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../api/axiosInstance.js';
+import api, { errorMessage } from '../api/axiosInstance.js';
 
 const CATEGORIES = [
   'Academic Writing','Email Writing','Resume and LinkedIn','Coding and Debugging',
@@ -77,7 +77,7 @@ export default function ContestEdit() {
       })
       .catch((e) => {
         if (e?.response?.status === 404) setNotFound(true);
-        else toast.error(e?.response?.data?.message || 'Failed to load contest.');
+        else toast.error(errorMessage(err, 'Failed to load contest.'));
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -115,7 +115,7 @@ export default function ContestEdit() {
       toast.success('Contest updated.');
       navigate(`/contests/${id}`);
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to update contest.');
+      toast.error(errorMessage(err, 'Failed to update contest.'));
     } finally {
       setSubmitting(false);
     }

@@ -6,7 +6,7 @@ import {
   Clock, Users as UsersIcon, Layers, Lock, BarChart3, Trash2, Loader2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../api/axiosInstance.js';
+import api, { errorMessage } from '../api/axiosInstance.js';
 import ScoreCard from '../components/ScoreCard.jsx';
 import { useDialog } from '../components/Dialog.jsx';
 
@@ -26,7 +26,7 @@ export default function Contests() {
     setLoading(true);
     api.get('/admin/contests')
       .then((res) => setContests(res.data.contests || []))
-      .catch((e) => toast.error(e?.response?.data?.message || 'Failed to load contests.'))
+      .catch((e) => toast.error(errorMessage(err, 'Failed to load contests.')))
       .finally(() => setLoading(false));
   };
   useEffect(load, []);
@@ -48,7 +48,7 @@ export default function Contests() {
       // and avoids a flash of the loading skeleton.
       setContests((arr) => arr.filter((x) => x._id !== c._id));
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to delete contest.');
+      toast.error(errorMessage(err, 'Failed to delete contest.'));
     } finally {
       setDeletingId(null);
     }

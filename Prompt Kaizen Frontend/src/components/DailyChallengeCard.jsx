@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Calendar, Sparkles, Trophy, ArrowRight, CheckCircle2, Loader2, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../api/axiosInstance.js';
+import api, { errorMessage } from '../api/axiosInstance.js';
 import { ratingBadgeClass } from '../utils/scoreUtils.js';
 import { useMidnightCountdown } from '../utils/useMidnightCountdown.js';
 
@@ -17,7 +17,7 @@ export default function DailyChallengeCard() {
       .then((res) => { setData(res.data); setFailed(false); })
       .catch((e) => {
         setFailed(true);
-        toast.error(e?.response?.data?.message || 'Failed to load daily challenge.');
+        toast.error(errorMessage(err, 'Failed to load daily challenge.'));
       })
       .finally(() => setLoading(false));
   }, []);

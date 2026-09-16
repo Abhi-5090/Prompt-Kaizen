@@ -6,7 +6,7 @@ import {
   Eraser, Send, Shuffle, Mic, MicOff,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../api/axiosInstance.js';
+import api, { errorMessage } from '../api/axiosInstance.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useVoiceInput } from '../utils/useVoiceInput.js';
 import { lockClipboardProps } from '../utils/lockClipboard.js';
@@ -89,7 +89,7 @@ export default function PromptAnalyzer() {
       // axios surfaces them as ERR_CANCELED — swallow them, only toast real
       // failures.
       if (err?.code === 'ERR_CANCELED' || err?.name === 'CanceledError') return;
-      toast.error(err?.response?.data?.message || 'Failed to load a scenario.');
+      toast.error(errorMessage(err, 'Failed to load a scenario.'));
     } finally {
       setScenarioLoading(false);
     }
@@ -125,7 +125,11 @@ export default function PromptAnalyzer() {
       // so the mic gates immediately.
       const body = err?.response?.data;
       if (body?.dictation) updateUser({ dictation: body.dictation });
-      toast.error(body?.message || 'Analysis failed.');
+      // errorMessage() distinguishes "the server said no" from "the server was
+      // never reached" — the latter previously showed as a bare
+      // "Analysis failed.", which pointed at the analyzer when the actual
+      // cause was the API not running.
+      toast.error(errorMessage(err, 'Analysis failed.'));
     } finally {
       setSubmitting(false);
     }

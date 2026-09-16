@@ -5,6 +5,7 @@ import { Mail, Lock, Loader2, LogIn, Eye, EyeOff, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext.jsx';
 import Logo from '../components/Logo.jsx';
+import { errorMessage } from '../api/axiosInstance.js';
 
 export default function Login() {
   const { login } = useAuth();
@@ -36,7 +37,7 @@ export default function Login() {
       const to = location.state?.from?.pathname || '/dashboard';
       navigate(to, { replace: true });
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Login failed.');
+      toast.error(errorMessage(err, 'Login failed.'));
     } finally {
       setSubmitting(false);
     }

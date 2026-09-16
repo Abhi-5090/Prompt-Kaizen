@@ -4,7 +4,7 @@ import {
   Users as UsersIcon, Search, ShieldCheck, Inbox, Upload, Trash2, KeyRound, Loader2, FileSpreadsheet, Download,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../api/axiosInstance.js';
+import api, { errorMessage } from '../api/axiosInstance.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useDialog } from '../components/Dialog.jsx';
 import { roleBadgeClass } from '../utils/scoreUtils.js';
@@ -59,7 +59,7 @@ export default function Users() {
       URL.revokeObjectURL(url);
       toast.success('Users exported.');
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to export users.');
+      toast.error(errorMessage(err, 'Failed to export users.'));
     } finally {
       setExporting(false);
     }
@@ -82,7 +82,7 @@ export default function Users() {
       toast.success(lines.join(' · '));
       load();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Upload failed.');
+      toast.error(errorMessage(err, 'Upload failed.'));
     } finally {
       setUploading(false);
     }
@@ -102,7 +102,7 @@ export default function Users() {
       toast.success('User deleted.');
       removeLocal(u._id);
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to delete user.');
+      toast.error(errorMessage(err, 'Failed to delete user.'));
     } finally {
       setRowBusyId(null);
     }
@@ -123,7 +123,7 @@ export default function Users() {
       await api.post(`/admin/users/${u._id}/reset-password`, { password: pwd });
       toast.success(`Password reset for ${u.email}`);
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to reset password.');
+      toast.error(errorMessage(err, 'Failed to reset password.'));
     } finally {
       setRowBusyId(null);
     }

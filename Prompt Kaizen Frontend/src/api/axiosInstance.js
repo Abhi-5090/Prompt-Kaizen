@@ -34,4 +34,40 @@ api.interceptors.response.use(
   }
 );
 
+/**
+ * Turns an Axios error into something a user can act on.
+ *
+ * `err.response?.data?.message || 'Something failed'` is the usual shape, and
+ * it is actively misleading: when the request never reached the server there
+ * IS no response, so every transport problem — API not running, wrong port,
+ * DNS, CORS rejection, offline — collapses into the same generic sentence.
+ * That sends people hunting for a bug in the feature when the server simply
+ * was not up.
+ *
+ * @param {unknown} err       the rejected Axios error
+ * @param {string}  fallback  message for a genuine server-side failure
+ */
+export function errorMessage(err, fallback = 'Something went wrong.') {
+  // The server answered — it knows best what went wrong.
+  if (err?.response?.data?.message) return err.response.data.message;
+
+  if (err?.response) {
+    // Answered, but with no usable body.
+    return `${fallback} (server returned ${err.response.status})`;
+  }
+
+  if (err?.code === 'ERR_CANCELED' || err?.name === 'CanceledError') {
+    return 'Request cancelled.';
+  }
+
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return 'You appear to be offline. Check your connection and try again.';
+  }
+
+  // No response at all: the request never completed. Name the address we
+  // tried, because the usual cause is the API not running or the wrong
+  // VITE_API_BASE_URL baked into the build.
+  return `Could not reach the server at ${baseURL}. Is the API running?`;
+}
+
 export default api;

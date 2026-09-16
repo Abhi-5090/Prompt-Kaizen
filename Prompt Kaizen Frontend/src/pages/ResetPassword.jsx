@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, Loader2, ShieldCheck, Eye, EyeOff, ArrowLeft, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../api/axiosInstance.js';
+import api, { errorMessage } from '../api/axiosInstance.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import AuthShell from '../components/AuthShell.jsx';
 
@@ -70,7 +70,7 @@ export default function ResetPassword() {
       toast.success('Password updated. Please sign in.');
       navigate('/login', { replace: true });
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Could not reset your password.');
+      toast.error(errorMessage(err, 'Could not reset your password.'));
     } finally {
       setSubmitting(false);
     }

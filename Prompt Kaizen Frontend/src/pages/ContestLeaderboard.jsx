@@ -5,7 +5,7 @@ import {
   ArrowLeft, Trophy, Award, Medal, Inbox, Clock, BarChart3, Target,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../api/axiosInstance.js';
+import api, { errorMessage } from '../api/axiosInstance.js';
 
 function formatDuration(ms) {
   if (!ms || ms < 0) return '—';
@@ -31,7 +31,7 @@ export default function ContestLeaderboard() {
   useEffect(() => {
     api.get('/contests/leaderboard')
       .then((res) => setRows(res.data.leaderboard || []))
-      .catch((e) => toast.error(e?.response?.data?.message || 'Failed to load leaderboard.'))
+      .catch((e) => toast.error(errorMessage(e, 'Failed to load leaderboard.')))
       .finally(() => setLoading(false));
   }, []);
 

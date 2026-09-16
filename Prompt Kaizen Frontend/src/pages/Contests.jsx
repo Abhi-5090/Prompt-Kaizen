@@ -7,7 +7,7 @@ import {
   Layers, TrendingDown, BarChart3,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../api/axiosInstance.js';
+import api, { errorMessage } from '../api/axiosInstance.js';
 
 export default function Contests() {
   const [contests, setContests] = useState([]);
@@ -16,7 +16,7 @@ export default function Contests() {
   useEffect(() => {
     api.get('/contests')
       .then((res) => setContests(res.data.contests || []))
-      .catch((e) => toast.error(e?.response?.data?.message || 'Failed to load contests.'))
+      .catch((e) => toast.error(errorMessage(e, 'Failed to load contests.')))
       .finally(() => setLoading(false));
   }, []);
 

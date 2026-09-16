@@ -4,7 +4,7 @@ import {
   Sparkles, Layers, Compass, Award, Trophy, Crown,
   ShieldCheck, Medal, Flame, Star, Calendar, Zap, Lock,
 } from 'lucide-react';
-import api from '../api/axiosInstance.js';
+import api, { errorMessage } from '../api/axiosInstance.js';
 
 // Map server `icon` strings to actual lucide components.
 const ICON_MAP = {
@@ -26,7 +26,7 @@ export default function BadgesPanel() {
   useEffect(() => {
     api.get('/dashboard/badges')
       .then((res) => setData(res.data))
-      .catch((e) => setError(e?.response?.data?.message || 'Failed to load badges.'))
+      .catch((e) => setError(errorMessage(err, 'Failed to load badges.')))
       .finally(() => setLoading(false));
   }, []);
 

@@ -6,7 +6,7 @@ import {
   ChevronLeft, ChevronRight, Sparkles, GaugeCircle, TimerReset,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../api/axiosInstance.js';
+import api, { errorMessage } from '../api/axiosInstance.js';
 import { lockClipboardProps } from '../utils/lockClipboard.js';
 import { useDialog } from '../components/Dialog.jsx';
 import { ratingBadgeClass } from '../utils/scoreUtils.js';
@@ -50,7 +50,7 @@ export default function ContestTake() {
             .catch(() => {});
         }
       })
-      .catch((e) => toast.error(e?.response?.data?.message || 'Failed to load contest.'))
+      .catch((e) => toast.error(errorMessage(e, 'Failed to load contest.')))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -88,7 +88,7 @@ export default function ContestTake() {
       setResult({ submission: res.submission, contest: data.contest });
       toast.success(silent ? 'Time up — answers auto-submitted.' : 'Contest submitted!');
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Submission failed.');
+      toast.error(errorMessage(err, 'Submission failed.'));
     } finally {
       setSubmitting(false);
     }

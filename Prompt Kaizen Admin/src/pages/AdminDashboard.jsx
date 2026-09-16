@@ -6,7 +6,7 @@ import {
   ChevronRight, Inbox, ShieldCheck, ArrowUpRight,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../api/axiosInstance.js';
+import api, { errorMessage } from '../api/axiosInstance.js';
 import ScoreCard from '../components/ScoreCard.jsx';
 import ChartCard from '../components/ChartCard.jsx';
 import { ratingBadgeClass, roleBadgeClass } from '../utils/scoreUtils.js';
@@ -26,7 +26,7 @@ export default function AdminDashboard() {
     let mounted = true;
     api.get('/admin/stats')
       .then((res) => mounted && setData(res.data))
-      .catch((e) => toast.error(e?.response?.data?.message || 'Failed to load admin stats.'))
+      .catch((e) => toast.error(errorMessage(err, 'Failed to load admin stats.')))
       .finally(() => setLoading(false));
     return () => { mounted = false; };
   }, []);

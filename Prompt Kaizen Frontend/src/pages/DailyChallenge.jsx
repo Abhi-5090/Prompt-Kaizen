@@ -6,7 +6,7 @@ import {
   Flame, History as HistoryIcon, Eye, ChevronRight, Wand2, TrendingDown, BarChart3,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../api/axiosInstance.js';
+import api, { errorMessage } from '../api/axiosInstance.js';
 import { ratingBadgeClass } from '../utils/scoreUtils.js';
 import { useMidnightCountdown } from '../utils/useMidnightCountdown.js';
 import { lockClipboardProps } from '../utils/lockClipboard.js';
@@ -27,7 +27,7 @@ export default function DailyChallenge() {
     setLoading(true);
     api.get('/prompts/daily-challenge')
       .then((res) => setChallenge(res.data))
-      .catch((e) => toast.error(e?.response?.data?.message || 'Failed to load daily challenge.'))
+      .catch((e) => toast.error(errorMessage(e, 'Failed to load daily challenge.')))
       .finally(() => setLoading(false));
   };
 
@@ -64,7 +64,7 @@ export default function DailyChallenge() {
       toast.success('Challenge submitted!');
       navigate(`/result/${data.evaluation._id}`);
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Submission failed.');
+      toast.error(errorMessage(err, 'Submission failed.'));
     } finally {
       setSubmitting(false);
     }

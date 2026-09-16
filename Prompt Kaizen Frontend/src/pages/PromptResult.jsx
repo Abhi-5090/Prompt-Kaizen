@@ -7,7 +7,7 @@ import {
   Share2, X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../api/axiosInstance.js';
+import api, { errorMessage } from '../api/axiosInstance.js';
 import Heatmap from '../components/Heatmap.jsx';
 import WrappedShareCard from '../components/WrappedShareCard.jsx';
 import { ratingBadgeClass, PARAMETER_KEYS, progressBarClass } from '../utils/scoreUtils.js';
@@ -35,7 +35,7 @@ export default function PromptResult() {
     let mounted = true;
     api.get(`/prompts/${id}`)
       .then((res) => mounted && setData(res.data.evaluation))
-      .catch((e) => setError(e?.response?.data?.message || 'Failed to load result.'))
+      .catch((e) => setError(errorMessage(err, 'Failed to load result.')))
       .finally(() => setLoading(false));
     return () => { mounted = false; };
   }, [id]);
