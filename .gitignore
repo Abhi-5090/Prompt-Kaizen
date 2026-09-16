@@ -38,3 +38,5 @@ e2e/.cache/
 
 # Vite local env overrides used when running the stack locally
 **/.env.local
+# Ad-hoc debug scripts written during investigation
+e2e/*.mjs
