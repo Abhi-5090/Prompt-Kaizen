@@ -21,6 +21,12 @@ services:
     healthCheckPath: /api/health
 
     envVars:
+      # Render defaults to its own latest Node (24 at time of writing) unless
+      # told otherwise. This repo is developed and CI-tested on 20; letting the
+      # platform choose means the runtime can move under you between deploys.
+      - key: NODE_VERSION
+        value: "20"
+
       - key: NODE_ENV
         value: production
 
