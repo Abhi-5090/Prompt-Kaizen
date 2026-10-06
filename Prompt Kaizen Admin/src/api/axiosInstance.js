@@ -90,10 +90,19 @@ export function errorMessage(err, fallback = 'Something went wrong.') {
     return 'You appear to be offline. Check your connection and try again.';
   }
 
-  // No response at all: the request never completed. Name the address we
-  // tried, because the usual cause is the API not running or the wrong
-  // VITE_API_BASE_URL baked into the build.
-  return `Could not reach the server at ${baseURL}. Is the API running?`;
+  // No response at all. The browser deliberately hides WHY: a blocked CORS
+  // response and an unreachable host are indistinguishable from JavaScript,
+  // because exposing the difference would let a page probe private networks.
+  //
+  // So name both causes. The first version of this message asked only "is the
+  // API running?", and when the real cause was a CORS origin missing from the
+  // server's allow-list, it sent debugging in entirely the wrong direction —
+  // the API was healthy the whole time.
+  return (
+    `Could not reach the server at ${baseURL}. ` +
+    `Either the API is down, or this site's address is not in its allowed origins. ` +
+    `The browser console will show a CORS error if it is the latter.`
+  );
 }
 
 export default api;

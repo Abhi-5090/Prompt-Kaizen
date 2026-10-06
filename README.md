@@ -136,7 +136,26 @@ npm test
 
 **Frontends → Vercel.** Each app has a `vercel.json` with SPA rewrites (without them, deep links 404 on refresh). Set `VITE_API_BASE_URL` to the Render URL plus `/api`.
 
-After deploying, add both Vercel origins to `CLIENT_URL` on the API or CORS will block them.
+After deploying, add **both** Vercel origins to `CLIENT_URL` on the API, comma
+separated, with no spaces and no trailing slashes:
+
+```
+CLIENT_URL=https://prompt-kaizen.vercel.app,https://prompt-kaizen-admin.vercel.app
+```
+
+Miss one and that app loads fine but every request fails. The browser reports a
+blocked CORS response exactly like an unreachable host, so the symptom reads as
+"the API is down" when the API is healthy and simply does not list that origin.
+Check with:
+
+```bash
+curl -I -X OPTIONS https://YOUR-API.onrender.com/api/auth/login \
+  -H "Origin: https://your-app.vercel.app" \
+  -H "Access-Control-Request-Method: POST"
+```
+
+A `204` with an `access-control-allow-origin` header means that origin is
+allowed; a `403` with no such header means it is not.
 
 ---
 
@@ -196,7 +215,7 @@ deepened `#C2470F`; brand *fills* keep the exact brand colour.
 |---|---|
 | Server exits at boot with `✗` lines | Config invalid — the output names each problem. |
 | `MongoDB connection error` | `mongod` not running, or `MONGO_URI` wrong. |
-| CORS blocked | The browser's origin is not in `CLIENT_URL`. Restart after changing it. |
+| CORS blocked, or "could not reach the server" while the API is healthy | The site's origin is not in `CLIENT_URL`. A blocked CORS response is indistinguishable from an unreachable host in the browser, so check the console for a CORS error and verify the origin with the OPTIONS curl in §6. |
 | Signup works but no email arrives | Check `GET /api/ready` — `status: degraded` means the mail transport is down. Locally, the code is in the server console. |
 | A user is stuck unverified | Admin → Users → verify, or `POST /api/admin/users/:id/verify-email`. |
 | 401 loops | Clear `pk_*` keys from localStorage. A password change signs out old sessions by design. |
