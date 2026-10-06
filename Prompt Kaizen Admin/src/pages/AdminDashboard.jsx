@@ -26,7 +26,7 @@ export default function AdminDashboard() {
     let mounted = true;
     api.get('/admin/stats')
       .then((res) => mounted && setData(res.data))
-      .catch((e) => toast.error(errorMessage(err, 'Failed to load admin stats.')))
+      .catch((err) => toast.error(errorMessage(err, 'Failed to load admin stats.')))
       .finally(() => setLoading(false));
     return () => { mounted = false; };
   }, []);

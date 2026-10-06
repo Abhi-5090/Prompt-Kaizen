@@ -919,6 +919,40 @@ flowchart LR
 
 ---
 
+## 12a. Security notes
+
+### Authentication bypass in `verify-otp` (fixed)
+
+`POST /api/auth/verify-otp` returned a signed session token whenever the
+account was already verified, **regardless of the code supplied**. Knowing a
+verified email address was therefore sufficient to authenticate as that person,
+administrators included — `seedAdmin` marks admin accounts verified, so an
+admin's address alone granted full console access.
+
+The branch predates the hardening work (present in commit `2712a4b`). It was
+masked while most accounts began life unverified; moving to invite-only, where
+every granted account is pre-verified, made it apply to everyone and a test
+caught it.
+
+Verifying an address must never authenticate — that is the password's job. The
+branch now returns the same generic failure as every other unsuccessful path,
+which also stops the endpoint confirming whether an address exists. Covered by
+a regression test in `tests/security.test.js`.
+
+### Access model
+
+With self-registration closed, the users collection *is* the access list.
+Accounts exist only because an administrator created them, which also means:
+
+- onboarding does not depend on outbound email (granted accounts are
+  pre-verified), so an SMTP-blocking host does not prevent people signing in;
+- an admin-issued password is a shared secret until replaced, so accounts are
+  flagged `mustChangePassword` and `POST /auth/change-password` exists to
+  retire it;
+- the initial password is returned exactly once, at creation.
+
+---
+
 ## 13. Open Items / Future Roadmap
 
 ### Delivered since this document was first written
@@ -938,6 +972,9 @@ These were listed as open and are now implemented — see the referenced tests.
 | CI/CD pipeline | `.github/workflows/ci.yml` |
 | Logging beyond morgan | Structured JSON logs + request ids, `middleware/requestContext.js` |
 | Real LLM rewrite | `utils/llmAnalyzer.js`, opt-in via `LLM_ANALYSIS_ENABLED` |
+| Invite-only access | Registration closed; `POST /admin/users` grants access, users collection is the access list |
+| Admin usage audit | `controllers/usageController.js` + the Usage calendar in the admin console |
+| Lint gate | ESLint `no-undef` in both apps, run in CI before the build |
 | Light + dark theming | `.design/tokens.css`, `ThemeContext.jsx`, verified by `scripts/verify-theme.cjs` |
 | Code splitting | Route-level `React.lazy`; entry bundle 921 KB → 388 KB |
 | Error boundaries | `components/ErrorBoundary.jsx`, per-route |

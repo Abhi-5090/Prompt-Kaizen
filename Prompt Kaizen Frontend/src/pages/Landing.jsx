@@ -62,8 +62,8 @@ export default function Landing() {
               points out what's missing, and rewrites it for you — in seconds.
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
-              <Link to="/register" className="btn-cream">
-                Get Started Free <ArrowRight className="w-4 h-4" />
+              <Link to="/login" className="btn-cream">
+                Sign in <ArrowRight className="w-4 h-4" />
               </Link>
               <Link to="/login" className="btn-ghost bg-transparent border-panel/40 text-ink hover:bg-panel/10 hover:border-panel/60">
                 I already have an account
@@ -207,8 +207,8 @@ export default function Landing() {
 
           <Reveal delay={0.25}>
             <div className="mt-12 text-center">
-              <Link to="/register" className="btn-cream">
-                Try it now — it's free <ArrowRight className="w-4 h-4" />
+              <Link to="/login" className="btn-cream">
+                Sign in to continue <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </Reveal>

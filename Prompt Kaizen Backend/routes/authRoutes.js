@@ -1,6 +1,6 @@
 const express = require('express');
 const {
-  register, login, me, verifyOtp, resendOtp, forgotPassword, resetPassword,
+  register, login, me, verifyOtp, resendOtp, forgotPassword, resetPassword, changePassword,
 } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 const { validate, rules } = require('../middleware/validate');
@@ -53,6 +53,14 @@ router.post('/reset-password', validate({
     confirmPassword: rules.str({ max: 200, trim: false }),
   },
 }), resetPassword);
+
+router.post('/change-password', protect, validate({
+  body: {
+    currentPassword: rules.str({ required: true, max: 200, trim: false }),
+    newPassword:     passwordField,
+    confirmPassword: rules.str({ max: 200, trim: false }),
+  },
+}), changePassword);
 
 router.get('/me', protect, me);
 

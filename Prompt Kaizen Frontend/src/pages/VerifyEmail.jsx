@@ -28,8 +28,8 @@ export default function VerifyEmail() {
   // If user lands here without an email in state, push them back to register.
   useEffect(() => {
     if (!email) {
-      toast.error('No email to verify. Please register first.');
-      navigate('/register', { replace: true });
+      toast.error('Nothing to verify here. Please sign in.');
+      navigate('/login', { replace: true });
     }
   }, [email, navigate]);
 
@@ -173,7 +173,7 @@ export default function VerifyEmail() {
         >
           <div className="card p-8">
             <Link
-              to="/register"
+              to="/login"
               className="inline-flex items-center gap-1 text-xs uppercase tracking-wider font-semibold text-brand-text hover:text-ink transition"
             >
               <ArrowLeft className="w-3.5 h-3.5" /> Back
@@ -242,7 +242,7 @@ export default function VerifyEmail() {
 
             <p className="mt-6 text-[11px] text-brand-text">
               Wrong email?{' '}
-              <Link to="/register" className="font-semibold text-ink underline-offset-4 hover:underline">
+              <Link to="/login" className="font-semibold text-ink underline-offset-4 hover:underline">
                 Go back and re-register
               </Link>
             </p>

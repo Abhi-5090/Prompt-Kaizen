@@ -28,6 +28,7 @@ async function req(path, opts = {}) {
 
 (async () => {
   await mongoose.connect(URI);
+  await require('./_sameDatabase')(API, mongoose);
   const U = mongoose.connection.collection('users');
   await U.deleteMany({ email: /paginate-/ });
   await U.deleteMany({ email: 'padmin@example.com' });

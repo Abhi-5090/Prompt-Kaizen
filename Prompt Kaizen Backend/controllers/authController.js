@@ -32,6 +32,9 @@ const sanitize = (user) => ({
   email: user.email,
   role: user.role,
   emailVerified: user.emailVerified,
+  // Lets the client prompt for a password change while the account is still
+  // on the one an administrator issued.
+  mustChangePassword: !!user.mustChangePassword,
   dictation: getDictationStatus(user),
   createdAt: user.createdAt,
 });
@@ -125,61 +128,25 @@ async function issueOtpForUser(user) {
     .catch((err) => console.error(`[mail] OTP to ${user.email} failed:`, err?.message || err));
 }
 
-// --- Register ---------------------------------------------------------------
+// --- Register (closed) -----------------------------------------------------
 
+/**
+ * Self-registration is disabled: access is granted by an administrator.
+ *
+ * The endpoint is kept rather than deleted so an older client, a bookmark or a
+ * stale bundle gets an explanation instead of a bare 404 that looks like an
+ * outage. It also documents the access model for anyone reading the API.
+ *
+ * Accounts are created by an admin through POST /api/admin/users (single) or
+ * /api/admin/users/bulk-upload (spreadsheet). Those paths mark the account
+ * verified, because an operator vouching for an address IS the verification —
+ * which also means onboarding no longer depends on outbound email.
+ */
 const register = asyncHandler(async (req, res) => {
-  // Shape/type validation already ran in middleware; these are the rules that
-  // need database or cross-field context.
-  const { name, email, password, confirmPassword } = req.body;
-
-  if (confirmPassword !== undefined && confirmPassword !== password) {
-    throw badRequest('Passwords do not match.');
-  }
-  assertPasswordStrength(password, { email, name });
-
-  const existing = await User.findOne({ email });
-
-  // Account enumeration: this endpoint used to return 409 for a taken address
-  // while /resend-otp returned a deliberately generic message. That asymmetry
-  // let anyone test whether an address had an account. Both paths now return
-  // the same 201 shape. A genuine returning user still gets a usable route
-  // forward, because we send them a mail telling them the account exists.
-  if (existing) {
-    if (!existing.emailVerified) {
-      // Unverified signup being retried — reissue the code so they can finish.
-      try {
-        await issueOtpForUser(existing);
-      } catch (mailErr) {
-        console.error('register: failed to reissue OTP:', mailErr?.message || mailErr);
-      }
-    }
-    // A verified account gets no mail and no new code; the response is
-    // identical either way so the caller learns nothing.
-    return res.status(201).json({
-      message: 'Account created. Check your email for the verification code.',
-      email,
-      needsVerification: true,
-      otpTtlMinutes: OTP_TTL_MINUTES,
-      delivery: deliveryNotice(),
-    });
-  }
-
-  const user = await User.create({ name, email, password });
-
-  try {
-    await issueOtpForUser(user);
-  } catch (mailErr) {
-    console.error('register: failed to send OTP email:', mailErr?.message || mailErr);
-    // Don't fail registration — the account exists and /resend-otp can retry.
-  }
-
-  return res.status(201).json({
-    message: 'Account created. Check your email for the verification code.',
-    email: user.email,
-    needsVerification: true,
-    otpTtlMinutes: OTP_TTL_MINUTES,
-    delivery: deliveryNotice(),
-  });
+  throw forbidden(
+    'Prompt Kaizen is invite-only. Ask an administrator to add your email address, ' +
+    'then sign in with the password they give you.'
+  );
 });
 
 // --- OTP verification -------------------------------------------------------
@@ -194,10 +161,20 @@ const verifyOtpHandler = asyncHandler(async (req, res) => {
 
   if (!user) throw genericFailure();
 
+  // AUTHENTICATION BYPASS — fixed.
+  //
+  // This branch used to short-circuit on `emailVerified` and return a signed
+  // session token, so anyone who knew a verified address could POST any
+  // six-digit code here and be logged in as that person: no password, no
+  // valid OTP. It reached admin accounts too, because seedAdmin marks them
+  // verified — knowing the admin's address alone was full console access.
+  //
+  // Verifying an address must never authenticate; proving identity is what
+  // the password is for. An already-verified account now gets the same
+  // generic failure as every other unsuccessful path, which also stops this
+  // endpoint confirming whether an address exists.
   if (user.emailVerified) {
-    // Already verified — issue a token so the client can proceed.
-    const token = signToken(user);
-    return res.json({ token, user: sanitize(user), alreadyVerified: true });
+    throw genericFailure();
   }
 
   if (!user.otpHash || !user.otpExpiresAt) throw genericFailure();
@@ -432,12 +409,61 @@ const resetPassword = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * Change your own password while signed in.
+ *
+ * Necessary because accounts are created by an administrator, who therefore
+ * knows the initial password. Without this, the only way to get a password the
+ * operator does not know is the emailed reset flow — and on a host that blocks
+ * outbound SMTP that is no route at all.
+ *
+ * Requires the current password: a stolen session alone must not be enough to
+ * take permanent ownership of an account.
+ */
+const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+
+  if (confirmPassword !== undefined && confirmPassword !== newPassword) {
+    throw badRequest('New passwords do not match.');
+  }
+
+  const user = await User.findById(req.user._id).select('+password');
+  if (!user) throw unauthorized('Not authorized.');
+
+  if (!(await user.matchPassword(currentPassword))) {
+    throw badRequest('Your current password is incorrect.');
+  }
+  if (await user.matchPassword(newPassword)) {
+    throw badRequest('Please choose a password you have not used before.');
+  }
+
+  assertPasswordStrength(newPassword, { email: user.email, name: user.name });
+
+  user.password = newPassword;          // pre-save hook hashes + bumps tokenVersion
+  user.mustChangePassword = false;      // the admin-set password is now retired
+  await user.save();
+
+  await recordAudit(req, {
+    action: 'auth.password_changed',
+    targetType: 'User', targetId: user._id, targetLabel: user.email,
+  });
+
+  // tokenVersion changed, so every other session is now invalid — including
+  // the one that made this request. Hand back a fresh token.
+  return res.json({
+    message: 'Password updated. Other devices have been signed out.',
+    token: signToken(user),
+    user: sanitize(user),
+  });
+});
+
 const me = asyncHandler(async (req, res) => res.json({ user: sanitize(req.user) }));
 
 module.exports = {
   register,
   login,
   me,
+  changePassword,
   verifyOtp: verifyOtpHandler,
   resendOtp: resendOtpHandler,
   forgotPassword,

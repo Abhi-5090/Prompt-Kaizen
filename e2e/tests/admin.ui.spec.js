@@ -19,13 +19,13 @@ test.describe('Admin app', () => {
 
     // A verified ordinary user must not get into the console.
     const email = `admin-reject-${Date.now()}@example.com`;
-    const password = 'E2eUserPass!9';
-    await request.post(`${API}/auth/register`, { data: { name: 'Nope', email, password, confirmPassword: password } });
     const tok = (await (await request.post(`${API}/auth/login`, { data: ADMIN })).json()).token;
-    const list = await (await request.get(`${API}/admin/users?search=${encodeURIComponent(email)}`, { headers: { Authorization: `Bearer ${tok}` } })).json();
-    if (list.users?.[0]) {
-      await request.post(`${API}/admin/users/${list.users[0]._id}/verify-email`, { headers: { Authorization: `Bearer ${tok}` } });
-    }
+    // Self-registration is closed, so the account is granted by an admin.
+    const granted = await request.post(`${API}/admin/users`, {
+      headers: { Authorization: `Bearer ${tok}` },
+      data: { name: 'Nope', email },
+    });
+    const password = (await granted.json()).initialPassword;
 
     await page.getByLabel(/email/i).first().fill(email);
     await page.getByLabel(/password/i).first().fill(password);
@@ -54,8 +54,10 @@ test.describe('Admin app', () => {
     const before = await (await request.get(`${API}/admin/users?limit=1`, { headers: { Authorization: `Bearer ${tok}` } })).json();
     if (before.pagination.total < 30) {
       for (let i = 0; i < 30; i++) {
-        await request.post(`${API}/auth/register`, {
-          data: { name: `Page User ${i}`, email: `pageuser-${i}@example.com`, password: 'E2eUserPass!9', confirmPassword: 'E2eUserPass!9' },
+        // Granting access is how accounts are created now.
+        await request.post(`${API}/admin/users`, {
+          headers: { Authorization: `Bearer ${tok}` },
+          data: { name: `Page User ${i}`, email: `pageuser-${i}@example.com` },
         });
       }
     }

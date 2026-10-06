@@ -7,6 +7,22 @@ const { recordAudit } = require('../utils/audit');
 const { getMailHealth, verifyMailConnection } = require('../utils/mailer');
 const { getLlmHealth } = require('../utils/llmAnalyzer');
 const { paginate, withSearch } = require('../utils/pagination');
+const crypto = require('crypto');
+
+/**
+ * A readable, high-entropy initial password.
+ *
+ * An operator has to relay this to a person — often by voice or chat — so
+ * ambiguous glyphs are excluded (0/O, 1/l/I) and it is grouped into blocks.
+ * ~62 bits of entropy, and it is single-use: the account is flagged
+ * `mustChangePassword` and the UI prompts for a replacement.
+ */
+function generateInitialPassword() {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  const pick = (n) => Array.from({ length: n }, () =>
+    alphabet[crypto.randomInt(0, alphabet.length)]).join('');
+  return `${pick(4)}-${pick(4)}-${pick(4)}`;
+}
 
 // Safety caps for unbounded admin reads. Aggregations would be cleaner long
 // term, but capping the find() result preserves the current response shape
@@ -375,6 +391,70 @@ const exportUsers = async (req, res) => {
 };
 
 /**
+ * Grant an email address access to the application.
+ *
+ * This is the only way an account comes into existence now that
+ * self-registration is closed, so the users collection IS the access list:
+ * no record, no sign-in.
+ *
+ * The account is created verified — an operator vouching for the address is
+ * the verification — which means onboarding does not depend on outbound email.
+ * That matters on hosts that block SMTP.
+ *
+ * The initial password is returned EXACTLY ONCE, in this response. It is
+ * stored only as a bcrypt hash, so it cannot be shown again; the admin must
+ * relay it now or reset it later.
+ */
+const createUser = async (req, res) => {
+  try {
+    const { name, email, password, role } = req.body;
+
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(409).json({
+        message: `${email} already has access. Use "Reset password" if they cannot sign in.`,
+      });
+    }
+
+    // An admin may set a password explicitly; otherwise one is generated.
+    const initialPassword = password || generateInitialPassword();
+    if (initialPassword.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters.' });
+    }
+
+    const user = await User.create({
+      name,
+      email,
+      password: initialPassword,
+      role: role === 'admin' ? 'admin' : 'user',
+      emailVerified: true,
+      // Admin-issued passwords are shared secrets until the user replaces one.
+      mustChangePassword: true,
+      invitedBy: req.user._id,
+    });
+
+    await recordAudit(req, {
+      action: 'user.access_granted',
+      targetType: 'User',
+      targetId: user._id,
+      targetLabel: user.email,
+      metadata: { role: user.role, passwordGenerated: !password },
+    });
+
+    return res.status(201).json({
+      message: `${user.email} can now sign in.`,
+      user: { _id: user._id, name: user.name, email: user.email, role: user.role },
+      // Shown once. Never recoverable afterwards.
+      initialPassword,
+      passwordGenerated: !password,
+    });
+  } catch (err) {
+    console.error('createUser error:', err);
+    return res.status(500).json({ message: 'Failed to grant access.' });
+  }
+};
+
+/**
  * Manually mark a user's email as verified.
  *
  * Recovery path for accounts stranded by a mail outage: they registered
@@ -458,6 +538,8 @@ module.exports = {
   stats,
   mailStatus,
   verifyUserEmail,
+  createUser,
+  generateInitialPassword,
   listUsers,
   listPrompts,
   bulkUploadUsers,

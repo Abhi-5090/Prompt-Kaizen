@@ -16,6 +16,7 @@ import { useTheme } from './context/ThemeContext.jsx';
 // behind auth, so an unauthenticated visitor should never download them.
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard.jsx'));
 const Users = lazy(() => import('./pages/Users.jsx'));
+const Usage = lazy(() => import('./pages/Usage.jsx'));
 const Prompts = lazy(() => import('./pages/Prompts.jsx'));
 const PromptDetails = lazy(() => import('./pages/PromptDetails.jsx'));
 const Contests = lazy(() => import('./pages/Contests.jsx'));
@@ -68,6 +69,7 @@ function AnimatedRoutes() {
               <Route path="/login" element={<Login />} />
               <Route path="/" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
               <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
+              <Route path="/usage" element={<ProtectedRoute><Usage /></ProtectedRoute>} />
               <Route path="/prompts" element={<ProtectedRoute><Prompts /></ProtectedRoute>} />
               <Route path="/prompts/:id" element={<ProtectedRoute><PromptDetails /></ProtectedRoute>} />
               <Route path="/contests" element={<ProtectedRoute><Contests /></ProtectedRoute>} />

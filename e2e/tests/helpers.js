@@ -2,34 +2,35 @@ import { expect } from '@playwright/test';
 
 export const API = 'http://127.0.0.1:5100/api';
 
-/** Creates a verified user straight through the API and returns credentials. */
+/**
+ * Creates a user the way the product now does: an administrator grants access
+ * to an email address. Self-registration is closed, so there is no other way
+ * for an account to exist.
+ */
 export async function createUser(request, suffix = Date.now()) {
   const email = `e2e-${suffix}@example.com`;
-  // The display name must not appear inside the password: the password policy
-  // rejects that, and naming the user "E2E <suffix>" alongside a password
-  // beginning "E2e" silently failed registration for every test that then
-  // tried to log in. (The policy is working as intended — the test data was
-  // the problem.)
-  const password = 'Quokka7!Harbour';
-  const res = await request.post(`${API}/auth/register`, {
-    data: { name: `Test Person ${suffix}`, email, password, confirmPassword: password },
-  });
-  if (![200, 201].includes(res.status())) {
-    throw new Error(`createUser: registration failed ${res.status()} ${await res.text()}`);
-  }
-  // Mail is unconfigured in this environment, so the OTP is printed to the
-  // server log rather than sent. Verifying through the admin endpoint is more
-  // reliable than scraping stdout.
   const admin = await adminToken(request);
-  const list = await request.get(`${API}/admin/users?search=${encodeURIComponent(email)}`, {
+  const res = await request.post(`${API}/admin/users`, {
     headers: { Authorization: `Bearer ${admin}` },
+    data: { name: `Test Person ${suffix}`, email },
   });
-  const found = (await list.json()).users?.[0];
-  if (found) {
-    await request.post(`${API}/admin/users/${found._id}/verify-email`, {
+  if (res.status() === 409) {
+    // Already granted by an earlier run — reset the password so the caller
+    // still gets working credentials.
+    const list = await request.get(`${API}/admin/users?search=${encodeURIComponent(email)}`, {
       headers: { Authorization: `Bearer ${admin}` },
     });
+    const found = (await list.json()).users?.[0];
+    const password = 'Quokka7!Harbour';
+    await request.post(`${API}/admin/users/${found._id}/reset-password`, {
+      headers: { Authorization: `Bearer ${admin}` }, data: { password },
+    });
+    return { email, password };
   }
+  if (res.status() !== 201) {
+    throw new Error(`createUser: grant failed ${res.status()} ${await res.text()}`);
+  }
+  const password = (await res.json()).initialPassword;
   return { email, password };
 }
 

@@ -15,7 +15,7 @@ export default function DailyChallengeCard() {
   const fetchChallenge = useCallback(() => {
     api.get('/prompts/daily-challenge')
       .then((res) => { setData(res.data); setFailed(false); })
-      .catch((e) => {
+      .catch((err) => {
         setFailed(true);
         toast.error(errorMessage(err, 'Failed to load daily challenge.'));
       })

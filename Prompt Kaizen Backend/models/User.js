@@ -65,6 +65,14 @@ const userSchema = new mongoose.Schema(
     passwordResetTokenHash: { type: String, select: false, default: null },
     passwordResetExpiresAt: { type: Date, default: null },
 
+    // True while the account is still on the password an administrator set.
+    // Access is granted by an operator who necessarily knows that password, so
+    // it is a shared secret until the user replaces it; the UI prompts them to.
+    mustChangePassword: { type: Boolean, default: false },
+
+    // Who granted access, for the audit trail.
+    invitedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+
     // Incremented to invalidate every previously-issued JWT for this user
     // (password change, admin reset, explicit revoke). Tokens carry the
     // value they were minted with; authMiddleware rejects any mismatch.

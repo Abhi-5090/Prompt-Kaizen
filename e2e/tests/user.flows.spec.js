@@ -10,7 +10,8 @@ test.describe('User app — core flows', () => {
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await expect(page.getByRole('link', { name: /login/i }).first()).toBeVisible();
-    await expect(page.getByRole('link', { name: /register/i }).first()).toBeVisible();
+    // No sign-up link: access is granted by an administrator.
+    await expect(page.getByRole('link', { name: /sign in/i }).first()).toBeVisible();
     expect(errors).toEqual([]);
   });
 
@@ -38,16 +39,14 @@ test.describe('User app — core flows', () => {
     expect(box.width).toBeGreaterThan(20);
   });
 
-  test('registration requires a strong password and rejects a weak one', async ({ page }) => {
+  test('there is no public sign-up anywhere in the app', async ({ page }) => {
+    // Access is granted by an administrator, so every route and link that
+    // used to lead to registration must be gone.
+    await page.goto('/');
+    expect(await page.getByRole('link', { name: /register|sign up|create account/i }).count()).toBe(0);
     await page.goto('/register');
-    await page.getByLabel(/name/i).first().fill('Weak Tester');
-    await page.getByLabel(/email/i).first().fill(`weak-${Date.now()}@example.com`);
-    const pw = page.getByLabel(/^password/i).first();
-    await pw.fill('password123');
-    const confirm = page.getByLabel(/confirm/i).first();
-    if (await confirm.count()) await confirm.fill('password123');
-    await page.getByRole('button', { name: /create|register|sign up/i }).first().click();
-    await expect(page.getByText(/too common|at least|must not/i).first()).toBeVisible({ timeout: 10000 });
+    await page.waitForURL(/login/, { timeout: 10000 });
+    await expect(page.getByText(/invite-only/i)).toBeVisible();
   });
 
   test('login, dashboard, analyze, result and history all work end to end', async ({ page }) => {

@@ -35,7 +35,7 @@ export default function PromptResult() {
     let mounted = true;
     api.get(`/prompts/${id}`)
       .then((res) => mounted && setData(res.data.evaluation))
-      .catch((e) => setError(errorMessage(err, 'Failed to load result.')))
+      .catch((err) => setError(errorMessage(err, 'Failed to load result.')))
       .finally(() => setLoading(false));
     return () => { mounted = false; };
   }, [id]);

@@ -163,6 +163,12 @@ app.get('/api/ready', (req, res) => {
   return res.json({
     status: mail.healthy ? 'ready' : 'degraded',
     db,
+    // Outside production, name the database. The test suites read it back to
+    // confirm they are inspecting the same one the API writes to — pointing
+    // them at different databases produced confusing failures (a successful
+    // 201 followed by an empty collection) three separate times. Withheld in
+    // production: it is infrastructure detail with no caller-facing use.
+    ...(isProd ? {} : { dbName: mongoose.connection.name }),
     mail: {
       healthy: mail.healthy,
       configured: mail.configured,

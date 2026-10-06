@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
+  UserPlus,
   Users as UsersIcon, Search, ShieldCheck, Inbox, Upload, Trash2, KeyRound, Loader2, FileSpreadsheet, Download,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -10,10 +11,12 @@ import { useDialog } from '../components/Dialog.jsx';
 import { roleBadgeClass } from '../utils/scoreUtils.js';
 import { usePaginatedList } from '../utils/usePaginatedList.js';
 import Pagination from '../components/Pagination.jsx';
+import GrantAccessDialog from '../components/GrantAccessDialog.jsx';
 
 export default function Users() {
   const { user: me } = useAuth();
   const dialog = useDialog();
+  const [granting, setGranting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [rowBusyId, setRowBusyId] = useState(null);
@@ -168,13 +171,20 @@ export default function Users() {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="btn-primary text-sm"
+            className="btn-ghost text-sm"
           >
             {uploading ? (
               <><Loader2 className="w-4 h-4 animate-spin-slow" /> Uploading…</>
             ) : (
               <><Upload className="w-4 h-4" /> Bulk upload</>
             )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setGranting(true)}
+            className="btn-primary text-sm"
+          >
+            <UserPlus className="w-4 h-4" /> Grant access
           </button>
         </div>
       </motion.div>
@@ -306,6 +316,12 @@ export default function Users() {
 
         <Pagination pagination={pagination} onPage={setPage} loading={loading} />
       </div>
+
+      <GrantAccessDialog
+        open={granting}
+        onClose={() => setGranting(false)}
+        onGranted={load}
+      />
     </div>
   );
 }

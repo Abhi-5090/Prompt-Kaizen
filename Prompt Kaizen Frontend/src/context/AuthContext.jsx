@@ -57,20 +57,9 @@ export function AuthProvider({ children }) {
     }
   };
 
-  /**
-   * Register no longer returns a token directly — the server requires an OTP
-   * verification step first. Caller should route to /verify-email with the
-   * returned email.
-   */
-  const register = async (payload) => {
-    const { data } = await api.post('/auth/register', payload);
-    return {
-      needsVerification: !!data.needsVerification,
-      email: data.email,
-      otpTtlMinutes: data.otpTtlMinutes,
-      message: data.message,
-    };
-  };
+  // `register` was removed along with public sign-up: the endpoint now returns
+  // 403, and accounts are created by an administrator. Keeping a dead method on
+  // the context would invite someone to wire a button back up to a 403.
 
   const verifyOtp = async (email, otp) => {
     const { data } = await api.post('/auth/verify-otp', { email, otp });
@@ -105,7 +94,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, setUser, loading, login, register, verifyOtp, resendOtp, logout, updateUser }}
+      value={{ user, setUser, loading, login, verifyOtp, resendOtp, logout, updateUser }}
     >
       {children}
     </AuthContext.Provider>

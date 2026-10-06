@@ -164,11 +164,12 @@ export default function Login() {
               </motion.button>
             </form>
 
-            <p className="mt-6 text-sm text-brand-text text-center">
-              New here?{' '}
-              <Link to="/register" className="font-semibold text-ink underline-offset-4 hover:underline">
-                Create an account
-              </Link>
+            {/* Access is granted by an administrator, so there is nothing to
+                sign up for. Saying so plainly is kinder than leaving someone
+                hunting for a button that no longer exists. */}
+            <p className="mt-6 text-xs text-ink-muted text-center leading-relaxed">
+              Prompt Kaizen is invite-only. If you don't have an account yet, ask an
+              administrator to add your email address — they'll give you a password to sign in with.
             </p>
           </div>
         </motion.div>

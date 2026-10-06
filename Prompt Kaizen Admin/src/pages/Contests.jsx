@@ -26,7 +26,7 @@ export default function Contests() {
     setLoading(true);
     api.get('/admin/contests')
       .then((res) => setContests(res.data.contests || []))
-      .catch((e) => toast.error(errorMessage(err, 'Failed to load contests.')))
+      .catch((err) => toast.error(errorMessage(err, 'Failed to load contests.')))
       .finally(() => setLoading(false));
   };
   useEffect(load, []);

@@ -18,6 +18,7 @@ async function req(path, opts={}) {
 
 (async () => {
   await mongoose.connect(URI);
+  await require('./_sameDatabase')(API, mongoose);
   const db = mongoose.connection;
   await db.collection('contests').deleteMany({});
   await db.collection('contestsubmissions').deleteMany({});

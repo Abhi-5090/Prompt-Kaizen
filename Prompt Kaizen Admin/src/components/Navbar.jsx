@@ -1,7 +1,7 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import { LayoutDashboard, Users, FileText, ShieldCheck, LogOut, Menu, X, Trophy } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, ShieldCheck, LogOut, Menu, X, Trophy, Activity } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import Logo from './Logo.jsx';
 import ThemeToggle from './ThemeToggle.jsx';
@@ -23,6 +23,7 @@ export default function Navbar() {
         { to: '/',         label: 'Overview', icon: LayoutDashboard, end: true },
         { to: '/users',    label: 'Users',    icon: Users },
         { to: '/prompts',  label: 'Prompts',  icon: FileText },
+        { to: '/usage',    label: 'Usage',    icon: Activity },
         { to: '/contests', label: 'Contests', icon: Trophy },
       ]
     : [];

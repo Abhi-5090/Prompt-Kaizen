@@ -126,6 +126,13 @@ jobs:
       - name: Install
         run: npm ci
 
+      # Vite does no scope analysis, so an identifier that is used but never
+      # imported compiles cleanly and throws ReferenceError only when that
+      # path runs. That shipped twice here with a green build. `no-undef`
+      # is the gate; warnings are not failures.
+      - name: Lint
+        run: npx eslint src --max-warnings=-1
+
       - name: Build
         # A build failure here is the only thing standing between a broken
         # import and a white screen in production, since these are SPAs with

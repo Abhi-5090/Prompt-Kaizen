@@ -1,6 +1,6 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Sparkles, History, LogOut, LogIn, UserPlus, Menu, X, Calendar, Trophy } from 'lucide-react';
+import { LayoutDashboard, Sparkles, History, LogOut, LogIn, Menu, X, Calendar, Trophy } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import Logo from './Logo.jsx';
@@ -111,10 +111,6 @@ export default function Navbar() {
               <Link to="/login" className="btn-ghost text-sm">
                 <LogIn className="w-4 h-4" />
                 <span className="hidden sm:inline">Login</span>
-              </Link>
-              <Link to="/register" className="btn-primary text-sm">
-                <UserPlus className="w-4 h-4" />
-                <span className="hidden sm:inline">Register</span>
               </Link>
             </>
           )}

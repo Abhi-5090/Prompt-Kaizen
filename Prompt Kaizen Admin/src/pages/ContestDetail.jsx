@@ -33,7 +33,7 @@ export default function ContestDetail() {
     setLoading(true);
     api.get(`/admin/contests/${id}`)
       .then((res) => setData(res.data))
-      .catch((e) => toast.error(errorMessage(err, 'Failed to load contest.')))
+      .catch((err) => toast.error(errorMessage(err, 'Failed to load contest.')))
       .finally(() => setLoading(false));
   };
   useEffect(load, [id]);

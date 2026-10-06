@@ -75,8 +75,8 @@ export default function ContestEdit() {
             : [emptyScenario()]
         );
       })
-      .catch((e) => {
-        if (e?.response?.status === 404) setNotFound(true);
+      .catch((err) => {
+        if (err?.response?.status === 404) setNotFound(true);
         else toast.error(errorMessage(err, 'Failed to load contest.'));
       })
       .finally(() => { if (!cancelled) setLoading(false); });

@@ -31,7 +31,7 @@ export default function Dashboard() {
     let mounted = true;
     api.get('/dashboard/stats')
       .then((res) => mounted && setData(res.data))
-      .catch((e) => setError(errorMessage(err, 'Failed to load dashboard.')))
+      .catch((err) => setError(errorMessage(err, 'Failed to load dashboard.')))
       .finally(() => setLoading(false));
     return () => { mounted = false; };
   }, []);

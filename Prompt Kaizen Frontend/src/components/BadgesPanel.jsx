@@ -26,7 +26,7 @@ export default function BadgesPanel() {
   useEffect(() => {
     api.get('/dashboard/badges')
       .then((res) => setData(res.data))
-      .catch((e) => setError(errorMessage(err, 'Failed to load badges.')))
+      .catch((err) => setError(errorMessage(err, 'Failed to load badges.')))
       .finally(() => setLoading(false));
   }, []);
 

@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar.jsx';
@@ -9,7 +9,6 @@ import RouteFallback from './components/RouteFallback.jsx';
 
 import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
-import Register from './pages/Register.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 import { useRouteFocus } from './utils/useRouteFocus.js';
 import { useTheme } from './context/ThemeContext.jsx';
@@ -89,7 +88,10 @@ function AnimatedRoutes() {
             <Routes location={location}>
               <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+              {/* Access is granted by an administrator; there is no public
+                  sign-up. Old links and bookmarks land on sign-in rather than
+                  a 404, which would read as a broken site. */}
+              <Route path="/register" element={<Navigate to="/login" replace />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
           {/* Target of the emailed reset link: /reset-password?token=…&email=… */}

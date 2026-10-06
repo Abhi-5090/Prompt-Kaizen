@@ -19,7 +19,7 @@ export default function PromptDetails() {
   useEffect(() => {
     api.get(`/prompts/${id}`)
       .then((res) => setData(res.data.evaluation))
-      .catch((e) => toast.error(errorMessage(err, 'Failed to load prompt.')))
+      .catch((err) => toast.error(errorMessage(err, 'Failed to load prompt.')))
       .finally(() => setLoading(false));
   }, [id]);
 

@@ -2,6 +2,8 @@
 
 A MERN application that scores user-written prompts against real-world scenarios across 10 parameters (out of 100), rewrites them, and wraps the loop in streaks, daily challenges, badges and scheduled contests.
 
+**Access is invite-only.** There is no public sign-up: an administrator grants an email address access, and the users collection is the access list — no record, no sign-in.
+
 Three independent apps share one MongoDB:
 
 ```
@@ -85,12 +87,13 @@ All JSON. Protected routes need `Authorization: Bearer <token>`. Errors carry a 
 ### Auth — `/api/auth`
 | Method | Path | Notes |
 |---|---|---|
-| POST | `/register` | Returns 201 whether or not the address is taken (no account enumeration). |
+| POST | `/register` | **Closed** — returns 403. Accounts are created by an administrator. |
 | POST | `/verify-otp` | 6-digit code, 5 attempts per code. |
 | POST | `/resend-otp` | Rate-limited to 5 per 15 min per IP. |
 | POST | `/login` | Locks the account for `LOCK_MINUTES` after `MAX_FAILED_LOGINS` failures. |
 | POST | `/forgot-password` | Always returns the same response. |
 | POST | `/reset-password` | Single-use token; signs out all other sessions. |
+| POST | `/change-password` | Signed-in user replaces their password; signs out other devices. |
 | GET | `/me` | Current user. |
 
 ### Prompts — `/api/prompts` *(protected)*
@@ -105,7 +108,9 @@ All JSON. Protected routes need `Authorization: Bearer <token>`. Errors carry a 
 Scenarios are withheld until the contest window opens. The per-user time limit is enforced server-side.
 
 ### Admin — `/api/admin` *(protected + admin)*
-`GET /stats` · `GET /users` · `GET /prompts` (both paginated + searchable) · `GET /users/export` · `POST /users/bulk-upload` · `POST /users/:id/reset-password` · `POST /users/:id/verify-email` · `DELETE /users/:id` · `GET /mail-status`
+`GET /stats` · `GET /users` · `GET /prompts` (both paginated + searchable) · `POST /users` (grant access) · `GET /users/export` · `POST /users/bulk-upload` · `POST /users/:id/reset-password` · `POST /users/:id/verify-email` · `DELETE /users/:id` · `GET /mail-status`
+
+**Usage audit** — `GET /usage/calendar?month=YYYY-MM` · `GET /usage/day?date=YYYY-MM-DD` · `GET /usage/users?from=&to=`. All bucket by IST calendar day.
 
 Admin contests live under `/api/admin/contests`.
 
@@ -135,7 +140,28 @@ After deploying, add both Vercel origins to `CLIENT_URL` on the API or CORS will
 
 ---
 
-## 7. Theming
+## 7. Granting access
+
+There is no sign-up form. To let someone in:
+
+**Admin console → Users → Grant access.** Enter their name and email, pick a
+role, and the server generates a password and shows it **once** — it is stored
+only as a bcrypt hash and cannot be retrieved later. Send it to them; they are
+prompted to change it after signing in.
+
+For many people at once, **Bulk upload** takes a headerless spreadsheet of
+`Name, Email, Password`.
+
+Granted accounts are created pre-verified, so onboarding does **not** depend on
+outbound email. That matters on hosts that block SMTP.
+
+To see who is using the product: **Usage**. A month calendar heat-mapped by
+request volume; pick a day for a per-user breakdown and a timeline of what was
+submitted. Everything is bucketed by IST calendar day.
+
+---
+
+## 8. Theming
 
 Both apps support **light, dark and system** themes, toggled from the navbar.
 System is the default and follows the OS live.
@@ -155,7 +181,7 @@ deepened `#C2470F`; brand *fills* keep the exact brand colour.
 
 ---
 
-## 8. Conventions
+## 9. Conventions
 
 - User app stores `pk_token`/`pk_user`; admin app uses `pk_admin_token`/`pk_admin_user`, so both can be open at once.
 - Passwords are bcrypt (10 rounds); `password`, `otpHash` and `passwordResetTokenHash` are `select: false` and stripped from JSON.
@@ -164,7 +190,7 @@ deepened `#C2470F`; brand *fills* keep the exact brand colour.
 
 ---
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 | Symptom | Cause |
 |---|---|
@@ -174,5 +200,6 @@ deepened `#C2470F`; brand *fills* keep the exact brand colour.
 | Signup works but no email arrives | Check `GET /api/ready` — `status: degraded` means the mail transport is down. Locally, the code is in the server console. |
 | A user is stuck unverified | Admin → Users → verify, or `POST /api/admin/users/:id/verify-email`. |
 | 401 loops | Clear `pk_*` keys from localStorage. A password change signs out old sessions by design. |
+| "Prompt Kaizen is invite-only" on sign-up | Working as intended — ask an admin to grant your address access. |
 
 For architecture, data model and feature detail, see [DOCUMENTATION.md](DOCUMENTATION.md).
