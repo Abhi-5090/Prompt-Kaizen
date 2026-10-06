@@ -18,7 +18,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [
-    { name: 'user',  testMatch: /user\..*\.spec\.js/,  use: { ...devices['Desktop Chrome'], channel: 'chrome', baseURL: 'http://127.0.0.1:5173' } },
-    { name: 'admin', testMatch: /admin\..*\.spec\.js/, use: { ...devices['Desktop Chrome'], channel: 'chrome', baseURL: 'http://127.0.0.1:5174' } },
+    { name: 'user',  testMatch: /user\..*\.spec\.js/,  use: { ...devices['Desktop Chrome'], channel: 'chrome', baseURL: process.env.E2E_USER_URL || 'http://127.0.0.1:5173' } },
+    { name: 'admin', testMatch: /admin\..*\.spec\.js/, use: { ...devices['Desktop Chrome'], channel: 'chrome', baseURL: process.env.E2E_ADMIN_URL || 'http://127.0.0.1:5174' } },
   ],
 });

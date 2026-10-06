@@ -42,6 +42,28 @@ export function ratingBadgeClass(rating) {
   }
 }
 
+/**
+ * Badge for a raw 0-100 score.
+ *
+ * `ratingBadgeClass` takes a rating *label* ("Good Prompt"); handing it a
+ * number silently falls through to the default branch, which paints
+ * `bg-panel` — readable on light but indistinguishable from the card in dark.
+ * Numeric scores get their own banding, and carry their own geometry so
+ * callers do not have to remember to add padding.
+ */
+export function scoreBadgeClass(score) {
+  const base = 'inline-flex items-center justify-center min-w-[2.25rem] rounded-lg '
+             + 'px-2 py-0.5 text-xs font-bold tabular-nums';
+  const n = Number(score);
+  if (!Number.isFinite(n)) return `${base} bg-surface-sunken text-ink-muted border border-line`;
+  if (n >= 80) return `${base} bg-brand text-brand-fg`;
+  // Brand tint carries the band; the number itself stays `ink`. `brand-text`
+  // on this tint measures 3.57:1 in light mode, under the 4.5:1 floor.
+  if (n >= 60) return `${base} bg-brand/20 text-ink border border-brand/30`;
+  if (n >= 40) return `${base} bg-surface-sunken text-ink border border-line`;
+  return `${base} bg-surface-sunken text-ink-muted border border-line`;
+}
+
 export function roleBadgeClass(role) {
   return role === 'admin'
     ? 'bg-panel text-panel-soft'

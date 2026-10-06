@@ -1,6 +1,8 @@
 import { expect } from '@playwright/test';
 
-export const API = 'http://127.0.0.1:5100/api';
+// Overridable so the suite can run against an isolated stack instead of
+// whatever happens to occupy the default port.
+export const API = process.env.E2E_API_URL || 'http://127.0.0.1:5100/api';
 
 /**
  * Creates a user the way the product now does: an administrator grants access

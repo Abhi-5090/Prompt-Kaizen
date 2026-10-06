@@ -89,6 +89,10 @@ const calendar = async (req, res) => {
 
     const days = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
     const busiest = days.reduce((max, d) => (d.prompts > (max?.prompts || 0) ? d : max), null);
+    // The calendar colours each cell relative to the busiest day IN VIEW, so
+    // the scale has to travel with the data rather than being derived on the
+    // client from a page of it.
+    const peak = days.reduce((max, d) => Math.max(max, d.prompts), 0);
 
     return res.json({
       month,
@@ -97,7 +101,11 @@ const calendar = async (req, res) => {
       totals: {
         prompts: days.reduce((a, d) => a + d.prompts, 0),
         contestSubmissions: days.reduce((a, d) => a + d.contestSubmissions, 0),
+        challenges: days.reduce((a, d) => a + (d.challenges || 0), 0),
         activeDays: days.length,
+        peak,
+        // Distinct people across the month, not the sum of daily actives —
+        // summing would count a daily user thirty times.
         busiestDay: busiest ? { date: busiest.date, prompts: busiest.prompts } : null,
       },
     });
@@ -122,7 +130,10 @@ const day = async (req, res) => {
 
     const window = { $gte: bounds.start, $lt: bounds.end };
 
-    const [perUser, timeline, contestCount] = await Promise.all([
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.max(1, Math.min(50, Number(req.query.limit) || 8));
+
+    const [perUser, contestCount] = await Promise.all([
       // Per-user totals for the day.
       PromptEvaluation.aggregate([
         { $match: { createdAt: window } },
@@ -151,41 +162,33 @@ const day = async (req, res) => {
         } },
         { $sort: { requests: -1, name: 1 } },
       ]),
-
-      // The individual requests, newest first. Capped: a day's timeline is for
-      // reading, and an unbounded list would be both slow and unreadable.
-      PromptEvaluation.find({ createdAt: window },
-        'userId category scenario overallScore rating isDailyChallenge scoredBy createdAt')
-        .sort({ createdAt: -1 })
-        .limit(Number(req.query.limit) || 200)
-        .populate('userId', 'name email')
-        .lean(),
-
       ContestSubmission.countDocuments({ submittedAt: window }),
     ]);
+
+    // Paged in memory: the grouping already collapsed the day to one row per
+    // active user, which is a small set even on a busy day. Paging inside the
+    // pipeline would cost a second aggregation to get the total.
+    const totalUsers = perUser.length;
+    const pagedUsers = perUser.slice((page - 1) * limit, page * limit);
 
     return res.json({
       date,
       timezone: IST_TZ,
       summary: {
         totalRequests: perUser.reduce((a, u) => a + u.requests, 0),
-        activeUsers: perUser.length,
+        activeUsers: totalUsers,
         dailyChallenges: perUser.reduce((a, u) => a + u.challenges, 0),
         contestSubmissions: contestCount,
+        // Busiest person that day, for the summary line.
+        topUser: perUser[0] ? { name: perUser[0].name, requests: perUser[0].requests } : null,
       },
-      perUser,
-      timeline: timeline.map((t) => ({
-        _id: t._id,
-        at: t.createdAt,
-        name: t.userId?.name || 'Deleted user',
-        email: t.userId?.email || '—',
-        category: t.category,
-        scenario: t.scenario,
-        score: t.overallScore,
-        rating: t.rating,
-        isDailyChallenge: t.isDailyChallenge,
-        scoredBy: t.scoredBy,
-      })),
+      perUser: pagedUsers,
+      pagination: {
+        page, limit, total: totalUsers,
+        totalPages: Math.max(1, Math.ceil(totalUsers / limit)),
+        hasNext: page * limit < totalUsers,
+        hasPrev: page > 1,
+      },
     });
   } catch (err) {
     console.error('usage day error:', err);
@@ -261,4 +264,67 @@ const byUser = async (req, res) => {
   }
 };
 
-module.exports = { calendar, day, byUser };
+/**
+ * GET /api/admin/usage/timeline?date=YYYY-MM-DD&page=&limit=&userId=
+ *
+ * The individual requests on one IST day, newest first.
+ *
+ * Separate from /usage/day so paging through the timeline does not re-run the
+ * per-user aggregation, and so clicking a user in the breakdown can filter
+ * this list without disturbing the rest of the view.
+ */
+const timeline = async (req, res) => {
+  try {
+    const date = req.query.date || istDayKey();
+    const bounds = istDayBounds(date);
+    if (!bounds) return res.status(400).json({ message: 'date must be YYYY-MM-DD.' });
+
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.max(1, Math.min(100, Number(req.query.limit) || 10));
+
+    const filter = { createdAt: { $gte: bounds.start, $lt: bounds.end } };
+    if (req.query.userId) filter.userId = req.query.userId;
+
+    const [items, total] = await Promise.all([
+      PromptEvaluation.find(filter,
+        'userId category scenario userPrompt overallScore rating isDailyChallenge scoredBy createdAt')
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .populate('userId', 'name email')
+        .lean(),
+      PromptEvaluation.countDocuments(filter),
+    ]);
+
+    return res.json({
+      date,
+      timezone: IST_TZ,
+      items: items.map((t) => ({
+        _id: t._id,
+        at: t.createdAt,
+        userId: t.userId?._id || null,
+        name: t.userId?.name || 'Deleted user',
+        email: t.userId?.email || '—',
+        category: t.category,
+        scenario: t.scenario,
+        // Trimmed: the table shows a preview, and a full prompt can be long.
+        promptPreview: String(t.userPrompt || '').slice(0, 160),
+        score: t.overallScore,
+        rating: t.rating,
+        isDailyChallenge: t.isDailyChallenge,
+        scoredBy: t.scoredBy,
+      })),
+      pagination: {
+        page, limit, total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+        hasNext: page * limit < total,
+        hasPrev: page > 1,
+      },
+    });
+  } catch (err) {
+    console.error('usage timeline error:', err);
+    return res.status(500).json({ message: 'Failed to load the timeline.' });
+  }
+};
+
+module.exports = { calendar, day, byUser, timeline };

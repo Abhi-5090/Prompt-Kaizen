@@ -7,7 +7,7 @@ const {
 const { protect } = require('../middleware/authMiddleware');
 const { adminOnly } = require('../middleware/adminMiddleware');
 const { validate, rules } = require('../middleware/validate');
-const { calendar, day, byUser } = require('../controllers/usageController');
+const { calendar, day, byUser, timeline } = require('../controllers/usageController');
 
 const router = express.Router();
 
@@ -92,7 +92,13 @@ const monthRule = rules.str({
 });
 
 router.get('/usage/calendar', validate({ query: { month: monthRule } }), calendar);
-router.get('/usage/day', validate({ query: { date: dateRule, limit: rules.int({ min: 1, max: 500 }) } }), day);
+router.get('/usage/day', validate({ query: {
+  date: dateRule, page: rules.int({ min: 1, max: 10000 }), limit: rules.int({ min: 1, max: 50 }),
+} }), day);
+router.get('/usage/timeline', validate({ query: {
+  date: dateRule, page: rules.int({ min: 1, max: 10000 }), limit: rules.int({ min: 1, max: 100 }),
+  userId: rules.objectId(),
+} }), timeline);
 router.get('/usage/users', validate({ query: {
   from: dateRule, to: dateRule, search: rules.str({ max: 100 }),
 } }), byUser);
