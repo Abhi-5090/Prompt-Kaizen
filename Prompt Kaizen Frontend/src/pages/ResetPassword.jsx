@@ -94,8 +94,8 @@ export default function ResetPassword() {
           <div className="mt-5 flex items-start gap-2.5 rounded-xl border border-line bg-surface-sunken p-3">
             <AlertTriangle className="w-4 h-4 text-brand-text mt-0.5 shrink-0" />
             <p className="text-xs text-ink-soft leading-relaxed">
-              This link is missing information. Ask an administrator to send
-              you a fresh one.
+              This link is missing information. Request a fresh one from the
+              {' '}<Link to="/forgot-password" className="font-semibold text-ink underline">forgot password</Link> page.
             </p>
           </div>
         )}

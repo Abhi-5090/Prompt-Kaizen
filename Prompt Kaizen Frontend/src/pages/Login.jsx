@@ -1,5 +1,5 @@
 import { useState, useId } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Loader2, LogIn, Eye, EyeOff, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -136,6 +136,15 @@ export default function Login() {
                   </button>
                 }
               />
+
+              <div className="flex justify-end -mt-1">
+                <Link
+                  to="/forgot-password"
+                  className="text-xs font-semibold text-brand-text hover:text-ink transition"
+                >
+                  Forgot your password?
+                </Link>
+              </div>
 
               <motion.button
                 whileTap={{ scale: 0.98 }}
