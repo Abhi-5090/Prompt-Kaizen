@@ -11,7 +11,9 @@ const connectDB = require('../config/db');
 const User = require('../models/User');
 
 async function main() {
-  await connectDB();
+  // A one-shot CLI must not inherit the server's retry-forever policy: if the
+  // database is unreachable the operator wants an error now, not a hung shell.
+  await connectDB({ retries: 3, baseDelayMs: 1000, maxDelayMs: 4000 });
 
   const name = process.env.ADMIN_NAME || 'Admin';
   // Default must match .env.example (ADMIN_EMAIL=Admin). When the two

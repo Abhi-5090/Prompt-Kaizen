@@ -23,6 +23,8 @@ try {
 }
 
 const connectDB = require('./config/db');
+// Exposes the last MongoDB connection error so /api/ready can name the cause.
+const { getDbHealth } = connectDB;
 const authRoutes = require('./routes/authRoutes');
 const promptRoutes = require('./routes/promptRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
@@ -92,6 +94,12 @@ const generalLimiter = rateLimit({
   max: Number(process.env.RATE_LIMIT_GENERAL_PER_MIN) || 300,
   standardHeaders: true,
   legacyHeaders: false,
+  // Never rate-limit the probes. The platform's health check, an uptime
+  // monitor and an operator refreshing /api/ready during an incident all share
+  // one source IP from the app's point of view; throttling them turns a
+  // database outage into a health check that reports 429 and a readiness page
+  // that stops answering exactly when it is needed.
+  skip: (req) => req.path === '/health' || req.path === '/ready',
   message: { message: 'Too many requests, please slow down.' },
 });
 
@@ -153,7 +161,19 @@ app.get('/api/ready', (req, res) => {
   // The database is the hard dependency — without it nothing works, so a
   // failure here should pull the instance out of the pool.
   if (state !== 1) {
-    return res.status(503).json({ status: 'not_ready', db, mail: { healthy: mail.healthy } });
+    // Name the failure. A bare "not_ready" forced operators back to the deploy
+    // log — which on most platforms is truncated or gone after a restart, and
+    // which they cannot reach at all from a browser. The message is redacted
+    // of credentials in config/db.js before it gets here.
+    return res.status(503).json({
+      status: 'not_ready',
+      db,
+      dbError: getDbHealth().lastError || undefined,
+      hint: getDbHealth().lastError
+        ? 'The API is running but cannot reach MongoDB. Check MONGO_URI and the database\u2019s network allowlist.'
+        : undefined,
+      mail: { healthy: mail.healthy },
+    });
   }
 
   // Mail is a soft dependency: existing users can sign in and use the product
@@ -195,62 +215,87 @@ app.use(errorHandler);
 
 const PORT = env.port;
 
-connectDB().then(() => {
-  const server = app.listen(PORT, () => {
-    console.log(`Prompt Kaizen API listening on http://localhost:${PORT} (pid ${process.pid})`);
-    console.log(`Allowed CORS origins: ${allowedOrigins.join(', ')}`);
+// --- Boot ------------------------------------------------------------------
+// The port is bound BEFORE connecting to MongoDB, and this ordering matters.
+//
+// Previously the server only called listen() inside connectDB().then(), and
+// config/db.js called process.exit(1) the moment the first connection attempt
+// failed. So a wrong MONGO_URI meant the process died without ever opening a
+// port: the host reported "no open ports detected", scanned for ten minutes,
+// and never marked the deploy live — while the actual cause was a single DNS
+// error logged before the restart loop began.
+//
+// Binding first means the process is always reachable and can report its own
+// state. The database is still a hard dependency: /api/ready returns 503 with
+// the connection error until Mongo is up, so the instance stays out of the
+// load-balancer pool, and routes that need the database still fail — but they
+// fail with an answer instead of a dead container.
+//
+// Listen on 0.0.0.0 explicitly: container platforms route to the published
+// port on the external interface, and a server bound to localhost is
+// unreachable from outside the container.
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Prompt Kaizen API listening on http://0.0.0.0:${PORT} (pid ${process.pid})`);
+  console.log(`Allowed CORS origins: ${allowedOrigins.join(', ')}`);
 
-    // Check the mail path once at startup so a broken SMTP config is a line
-    // in the deploy log rather than a stream of "I never got my code" reports.
-    // Deliberately after listen() and not awaited: mail is a soft dependency
-    // and must not delay the port opening.
-    verifyMailConnection().catch(() => {});
+  // Check the mail path once at startup so a broken SMTP config is a line
+  // in the deploy log rather than a stream of "I never got my code" reports.
+  // Deliberately after listen() and not awaited: mail is a soft dependency
+  // and must not delay the port opening.
+  verifyMailConnection().catch(() => {});
+});
+
+// Not awaited: connectDB retries with backoff and resolves once connected.
+// A rejection here can only come from a missing MONGO_URI, which loadEnv()
+// already treats as fatal — but an unhandled rejection would take the process
+// down via the handler below, so it is caught and reported.
+connectDB().catch((err) => {
+  console.error('[fatal] could not establish a MongoDB connection:', err.message);
+});
+
+// --- Graceful shutdown -------------------------------------------------
+// cluster.js documents that workers "exit when their HTTP server finishes
+// in-flight requests", but nothing implemented that: on SIGTERM the process
+// died instantly and dropped whatever it was serving. Every deploy on Render
+// sends SIGTERM, so this ran on every release.
+let shuttingDown = false;
+const shutdown = async (signal) => {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`[shutdown] ${signal} received \u2014 closing server to new connections`);
+
+  // Stop accepting connections; the callback fires once in-flight requests
+  // have finished.
+  server.close(async () => {
+    try {
+      await mongoose.connection.close(false);
+      console.log('[shutdown] MongoDB connection closed');
+    } catch (err) {
+      console.error('[shutdown] error closing MongoDB:', err.message);
+    }
+    console.log('[shutdown] clean exit');
+    process.exit(0);
   });
 
-  // --- Graceful shutdown ---------------------------------------------------
-  // cluster.js documents that workers "exit when their HTTP server finishes
-  // in-flight requests", but nothing implemented that: on SIGTERM the process
-  // died instantly and dropped whatever it was serving. Every deploy on Render
-  // sends SIGTERM, so this ran on every release.
-  let shuttingDown = false;
-  const shutdown = async (signal) => {
-    if (shuttingDown) return;
-    shuttingDown = true;
-    console.log(`[shutdown] ${signal} received — closing server to new connections`);
+  // Failsafe: a hung long-lived request must not block the deploy forever.
+  setTimeout(() => {
+    console.warn('[shutdown] forced exit after 15s timeout');
+    process.exit(1);
+  }, 15_000).unref();
+};
 
-    // Stop accepting connections; the callback fires once in-flight requests
-    // have finished.
-    server.close(async () => {
-      try {
-        await mongoose.connection.close(false);
-        console.log('[shutdown] MongoDB connection closed');
-      } catch (err) {
-        console.error('[shutdown] error closing MongoDB:', err.message);
-      }
-      console.log('[shutdown] clean exit');
-      process.exit(0);
-    });
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
-    // Failsafe: a hung long-lived request must not block the deploy forever.
-    setTimeout(() => {
-      console.warn('[shutdown] forced exit after 15s timeout');
-      process.exit(1);
-    }, 15_000).unref();
-  };
-
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
-  process.on('SIGINT', () => shutdown('SIGINT'));
-
-  // A promise rejection with no handler leaves the process in an undefined
-  // state. Log it and shut down cleanly so the platform restarts a healthy one.
-  process.on('unhandledRejection', (reason) => {
-    console.error('[fatal] unhandled promise rejection:', reason);
-    shutdown('unhandledRejection');
-  });
-  process.on('uncaughtException', (err) => {
-    console.error('[fatal] uncaught exception:', err);
-    shutdown('uncaughtException');
-  });
+// A promise rejection with no handler leaves the process in an undefined
+// state. Log it and shut down cleanly so the platform restarts a healthy one.
+process.on('unhandledRejection', (reason) => {
+  console.error('[fatal] unhandled promise rejection:', reason);
+  shutdown('unhandledRejection');
+});
+process.on('uncaughtException', (err) => {
+  console.error('[fatal] uncaught exception:', err);
+  shutdown('uncaughtException');
 });
 
 module.exports = app;

@@ -1,0 +1,141 @@
+# Render blueprint for the standalone Prompt Kaizen API repo.
+#
+# The monorepo has its own render.yaml with `rootDir: "Prompt Kaizen Backend"`.
+# This file is the equivalent for a backend-only repo, where the API lives at
+# the repository root.
+#
+# NOTE: Render only reads this file for services created via Blueprint
+# (Dashboard → New → Blueprint). A service created by hand keeps whatever was
+# typed into its settings, so for an existing service the two values below must
+# be corrected in the dashboard:
+#   Settings → Build & Deploy → Start Command  →  npm start
+#   Environment → NODE_VERSION                 →  20
+services:
+  - type: web
+    name: prompt-kaizen-api
+    runtime: node
+    plan: starter            # 512 MB / 0.5 CPU. Raise before a contest.
+    region: singapore        # Closest region to an IST-based userbase.
+
+    # `npm ci` installs exactly what package-lock.json pins, and (unlike
+    # `npm install`) fails loudly if the lockfile and package.json disagree
+    # instead of silently resolving new versions on the server.
+    buildCommand: npm ci --omit=dev
+
+    # cluster.js forks one worker per CPU (or WEB_CONCURRENCY) and restarts
+    # crashed workers. Each worker runs server.js, which handles SIGTERM and
+    # drains in-flight requests before exiting.
+    #
+    # NOT `npm run dev`: nodemon is a development file-watcher. It is a
+    # devDependency (so `npm ci --omit=dev` will not even install it), it
+    # forks no workers, and when the app exits it prints "waiting for file
+    # changes" and sits there forever — on a server nothing ever changes a
+    # file, so a crashed app never restarts and the deploy hangs until the
+    # port scan times out.
+    startCommand: npm start
+
+    # Liveness only — /api/health answers as long as the process is up.
+    # Deliberately not /api/ready: readiness returns 503 while MongoDB is
+    # unreachable, and failing the health check on a database outage would
+    # roll back the deploy instead of leaving an instance that can report
+    # what is wrong.
+    healthCheckPath: /api/health
+
+    envVars:
+      # Render defaults to its own latest Node (24 at time of writing) unless
+      # told otherwise. This repo is developed and CI-tested on 20; letting the
+      # platform choose means the runtime can move under you between deploys.
+      - key: NODE_VERSION
+        value: "20"
+
+      - key: NODE_ENV
+        value: production
+
+      # Single vCPU on the starter plan — one worker avoids workers competing
+      # for the same core. Raise this together with the plan.
+      - key: WEB_CONCURRENCY
+        value: "1"
+
+      # --- Secrets: set these in the Render dashboard, never in this file ---
+      # MONGO_URI must be the real Atlas SRV string, e.g.
+      #   mongodb+srv://<user>:<pass>@cluster0.ab1cd.mongodb.net/prompt_kaizen?retryWrites=true&w=majority
+      # A host like cluster0.xxxxx.mongodb.net is a documentation placeholder:
+      # it does not resolve, and the API will report it on GET /api/ready.
+      # Atlas → Network Access must also allow 0.0.0.0/0, because Render's
+      # egress IP is not fixed on the starter plan.
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false          # openssl rand -base64 48 — boot fails without it
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASSWORD
+        sync: false          # Gmail app password, no spaces
+      - key: OPENAI_API_KEY
+        sync: false
+
+      # --- Must match the deployed Vercel domains exactly, or CORS blocks ---
+      - key: CLIENT_URL
+        sync: false          # e.g. https://promptkaizen.vercel.app,https://admin-promptkaizen.vercel.app
+
+      - key: JWT_EXPIRES_IN
+        value: 7d
+
+      # --- Admin seed (npm run seed:admin from the Render shell) ---
+      - key: ADMIN_NAME
+        value: Admin
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_RESET_PASSWORD
+        value: "false"       # true would reset the password on every seed run
+
+      # --- Account security ---
+      - key: MAX_FAILED_LOGINS
+        value: "8"
+      - key: LOCK_MINUTES
+        value: "15"
+      - key: RESET_TTL_MINUTES
+        value: "30"
+      - key: OTP_TTL_MINUTES
+        value: "5"           # 2 min is tight once email delivery latency is real
+
+      # --- Rate limits ---
+      - key: RATE_LIMIT_GENERAL_PER_MIN
+        value: "300"
+      - key: RATE_LIMIT_AUTH_PER_MIN
+        value: "20"
+      - key: RATE_LIMIT_EMAIL_PER_15MIN
+        value: "5"
+      - key: RATE_LIMIT_ANALYZE_PER_MIN
+        value: "20"
+
+      # --- SMTP resilience: without these a stalled mail host holds requests ---
+      - key: SMTP_CONNECTION_TIMEOUT_MS
+        value: "10000"
+      - key: SMTP_GREETING_TIMEOUT_MS
+        value: "10000"
+      - key: SMTP_SOCKET_TIMEOUT_MS
+        value: "15000"
+      - key: SMTP_SEND_TIMEOUT_MS
+        value: "20000"
+
+      # --- LLM scoring: falls back to the rule-based analyzer when off ---
+      - key: LLM_ANALYSIS_ENABLED
+        value: "false"       # flip to "true" once OPENAI_API_KEY is set
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: OPENAI_TIMEOUT_MS
+        value: "12000"
+      - key: OPENAI_MAX_RETRIES
+        value: "1"
+      - key: OPENAI_TOTAL_BUDGET_MS
+        value: "25000"
+
+      # --- Mongo pool. 100 per worker is sized for a multi-core plan; on a
+      # shared Atlas tier the cluster-wide connection cap is the real limit. ---
+      - key: MONGO_POOL_SIZE
+        value: "50"
+      - key: MONGO_MIN_POOL_SIZE
+        value: "5"
