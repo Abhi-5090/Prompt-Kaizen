@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Lock, Loader2, ShieldCheck, Eye, EyeOff, ArrowLeft, AlertTriangle } from 'lucide-react';
+import { Lock, Loader2, ShieldCheck, Eye, EyeOff, ArrowLeft, AlertTriangle, KeyRound, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { errorMessage } from '../api/axiosInstance.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -9,41 +9,52 @@ import AuthShell from '../components/AuthShell.jsx';
 const MIN_LENGTH = 8;
 
 /**
- * Landing page for the emailed reset link:
- *   /reset-password?token=<opaque>&email=<address>
+ * Second half of the password reset:
+ *   /reset-password?email=<address>
  *
- * The token is single-use and expires server-side; this screen only collects
- * the new password and reports whatever the server decides.
+ * The user arrives here from the request page carrying only their address;
+ * the 6-digit code comes out of their inbox and is typed in below. The code
+ * is single-use, expires server-side and allows a handful of wrong guesses
+ * before it is discarded, so this screen collects it and reports whatever
+ * the server decides rather than validating it locally.
  */
 export default function ResetPassword() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { setUser } = useAuth();
 
-  const token = params.get('token') || '';
-  const email = params.get('email') || '';
+  // Prefilled from the request page; still editable, because a user who
+  // opens the emailed code on a different device has no query string.
+  const emailParam = params.get('email') || '';
 
-  const [form, setForm] = useState({ password: '', confirmPassword: '' });
+  const [form, setForm] = useState({
+    email: emailParam,
+    otp: '',
+    password: '',
+    confirmPassword: '',
+  });
   const [show, setShow] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // A link that arrived without its query string cannot work; say so up front
-  // rather than after the user has typed a password twice.
-  const linkIncomplete = !token || !email;
-
-  useEffect(() => {
-    if (linkIncomplete) {
-      toast.error('That reset link is incomplete. Please request a new one.');
-    }
-  }, [linkIncomplete]);
-
-  const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    // Codes get pasted out of mail clients with stray spaces, and some
+    // clients helpfully format them as "418 209". Keep only the digits so a
+    // correct code is not rejected over whitespace.
+    setForm((f) => ({ ...f, [name]: name === 'otp' ? value.replace(/\D/g, '').slice(0, 6) : value }));
+  };
 
   const tooShort = form.password.length > 0 && form.password.length < MIN_LENGTH;
   const mismatch = form.confirmPassword.length > 0 && form.password !== form.confirmPassword;
 
   const onSubmit = async (e) => {
     e.preventDefault();
+    if (!form.email.trim()) {
+      return toast.error('Please enter your email address.');
+    }
+    if (form.otp.length !== 6) {
+      return toast.error('Enter the 6-digit code from your email.');
+    }
     if (form.password.length < MIN_LENGTH) {
       return toast.error(`Password must be at least ${MIN_LENGTH} characters.`);
     }
@@ -53,7 +64,8 @@ export default function ResetPassword() {
     try {
       setSubmitting(true);
       const { data } = await api.post('/auth/reset-password', {
-        email, token,
+        email: form.email.trim(),
+        otp: form.otp,
         password: form.password,
         confirmPassword: form.confirmPassword,
       });
@@ -80,27 +92,65 @@ export default function ResetPassword() {
     <AuthShell
       title="Choose a new password"
       subtitle="Once it's set, every other device signed into this account will be signed out."
-      bullets={['Minimum 8 characters', 'Cannot reuse your current password', 'This link works only once']}
+      bullets={['Minimum 8 characters', 'Cannot reuse your current password', 'The code works only once']}
     >
       <form onSubmit={onSubmit} className="card p-8">
         <h1 className="text-2xl font-bold tracking-tight text-ink">Set a new password</h1>
-        {email && (
-          <p className="mt-1.5 text-sm text-brand-text">
-            for <span className="font-semibold text-ink">{email}</span>
-          </p>
-        )}
+        <p className="mt-1.5 text-sm text-brand-text">
+          Enter the 6-digit code we emailed you, then choose a new password.
+        </p>
 
-        {linkIncomplete && (
+        {!emailParam && (
           <div className="mt-5 flex items-start gap-2.5 rounded-xl border border-line bg-surface-sunken p-3">
             <AlertTriangle className="w-4 h-4 text-brand-text mt-0.5 shrink-0" />
             <p className="text-xs text-ink-soft leading-relaxed">
-              This link is missing information. Request a fresh one from the
+              Haven't requested a code yet? Get one from the
               {' '}<Link to="/forgot-password" className="font-semibold text-ink underline">forgot password</Link> page.
             </p>
           </div>
         )}
 
         <div className="mt-5 space-y-4">
+          <div>
+            <label htmlFor="email" className="label">Email address</label>
+            <div className="relative">
+              <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={form.email}
+                onChange={onChange}
+                className="input pl-9"
+                placeholder="you@example.com"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="otp" className="label">Reset code</label>
+            <div className="relative">
+              <KeyRound className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
+              <input
+                id="otp"
+                name="otp"
+                // `inputMode` + `autoComplete="one-time-code"` let phones
+                // offer the code straight from the notification instead of
+                // making the user switch to their mail app and back.
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                autoFocus={Boolean(emailParam)}
+                value={form.otp}
+                onChange={onChange}
+                className="input pl-9 tracking-[0.4em] font-mono"
+                placeholder="000000"
+              />
+            </div>
+          </div>
+
           <div>
             <label htmlFor="password" className="label">New password</label>
             <div className="relative">
@@ -112,7 +162,6 @@ export default function ResetPassword() {
                 autoComplete="new-password"
                 value={form.password}
                 onChange={onChange}
-                disabled={linkIncomplete}
                 className="input pl-9 pr-10"
                 placeholder="At least 8 characters"
                 aria-invalid={tooShort || undefined}
@@ -145,7 +194,6 @@ export default function ResetPassword() {
                 autoComplete="new-password"
                 value={form.confirmPassword}
                 onChange={onChange}
-                disabled={linkIncomplete}
                 className="input pl-9"
                 placeholder="Type it again"
                 aria-invalid={mismatch || undefined}
@@ -161,7 +209,7 @@ export default function ResetPassword() {
         <button
           type="submit"
           className="btn-primary w-full mt-6"
-          disabled={submitting || linkIncomplete || tooShort || mismatch || !form.password}
+          disabled={submitting || tooShort || mismatch || !form.password || form.otp.length !== 6}
         >
           {submitting
             ? <><Loader2 className="w-4 h-4 animate-spin-slow" /> Updating…</>

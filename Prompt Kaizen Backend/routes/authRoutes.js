@@ -48,7 +48,10 @@ router.post('/forgot-password', validate({ body: { email: emailField } }), forgo
 router.post('/reset-password', validate({
   body: {
     email:           emailField,
-    token:           rules.str({ required: true, min: 20, max: 200, trim: false }),
+    // Same shape as the verification code on /verify-otp. Rejecting anything
+    // that is not six digits here keeps malformed guesses from reaching the
+    // attempt counter at all.
+    otp:             rules.str({ required: true, min: 6, max: 6, pattern: /^\d{6}$/, patternMessage: 'Code must be 6 digits.' }),
     password:        passwordField,
     confirmPassword: rules.str({ max: 200, trim: false }),
   },

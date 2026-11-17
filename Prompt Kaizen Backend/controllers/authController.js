@@ -3,9 +3,9 @@ const User = require('../models/User');
 const {
   generateOtp, hashOtp, verifyOtp, otpExpiry,
   OTP_TTL_MINUTES, OTP_MAX_ATTEMPTS,
-  generateResetToken, hashResetToken, resetExpiry, safeEqualHex, RESET_TTL_MINUTES,
+  resetExpiry, RESET_TTL_MINUTES, RESET_OTP_MAX_ATTEMPTS,
 } = require('../utils/otp');
-const { sendOtpEmail, sendPasswordResetEmail, getMailHealth, allowConsoleFallback } = require('../utils/mailer');
+const { sendOtpEmail, sendPasswordResetOtpEmail, getMailHealth, allowConsoleFallback } = require('../utils/mailer');
 const { getDictationStatus } = require('../utils/dictation');
 const { recordAudit } = require('../utils/audit');
 const { asyncHandler, badRequest, unauthorized, forbidden, tooMany } = require('../utils/asyncHandler');
@@ -321,7 +321,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
   // Always the same response — this endpoint must not confirm which
   // addresses have accounts.
   const generic = {
-    message: 'If an account exists for that email, a reset link has been sent.',
+    message: 'If an account exists for that email, a reset code has been sent.',
     ttlMinutes: RESET_TTL_MINUTES,
     delivery: deliveryNotice(),
   };
@@ -329,22 +329,20 @@ const forgotPassword = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email });
   if (!user) return res.json(generic);
 
-  const { token, hash } = generateResetToken();
-  user.passwordResetTokenHash = hash;
+  const otp = generateOtp();
+  user.passwordResetOtpHash = await hashOtp(otp);
   user.passwordResetExpiresAt = resetExpiry();
+  // A fresh code starts a fresh attempt budget. Without this reset, a user
+  // who mistyped the previous code five times would find the new one already
+  // exhausted and have no way out.
+  user.passwordResetOtpAttempts = 0;
   await user.save();
-
-  // Link points at the user-facing SPA. First configured origin is the user
-  // app by convention (the admin app is second).
-  const base = (process.env.CLIENT_URL || 'http://localhost:5173')
-    .split(',')[0].trim().replace(/\/$/, '');
-  const resetUrl = `${base}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(user.email)}`;
 
   // Not awaited, for the same reason as the OTP send: a mail outage must not
   // hold the request open. The response is generic regardless of outcome, so
   // a failure here also cannot become an enumeration oracle.
-  sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl, ttlMinutes: RESET_TTL_MINUTES })
-    .catch((err) => console.error(`[mail] reset link to ${user.email} failed:`, err?.message || err));
+  sendPasswordResetOtpEmail({ to: user.email, name: user.name, otp, ttlMinutes: RESET_TTL_MINUTES })
+    .catch((err) => console.error(`[mail] reset code to ${user.email} failed:`, err?.message || err));
 
   await recordAudit(req, {
     action: 'auth.password_reset_requested',
@@ -355,27 +353,54 @@ const forgotPassword = asyncHandler(async (req, res) => {
 });
 
 const resetPassword = asyncHandler(async (req, res) => {
-  const { email, token, password, confirmPassword } = req.body;
+  const { email, otp, password, confirmPassword } = req.body;
 
   if (confirmPassword !== undefined && confirmPassword !== password) {
     throw badRequest('Passwords do not match.');
   }
 
-  const user = await User.findOne({ email }).select('+passwordResetTokenHash +password');
-  const invalidToken = () =>
-    badRequest('That reset link is invalid or has expired. Request a new one.');
+  const user = await User.findOne({ email }).select('+passwordResetOtpHash +password');
 
-  if (!user || !user.passwordResetTokenHash || !user.passwordResetExpiresAt) {
-    throw invalidToken();
+  // One message for every failure mode — wrong code, expired code, no code
+  // outstanding, no such account. Distinguishing them would turn this
+  // endpoint into an account-enumeration oracle, and telling an attacker
+  // *why* a guess failed is free information.
+  const invalidCode = () =>
+    badRequest('That reset code is invalid or has expired. Request a new one.');
+
+  const clearCode = async (u) => {
+    u.passwordResetOtpHash = null;
+    u.passwordResetExpiresAt = null;
+    u.passwordResetOtpAttempts = 0;
+    await u.save();
+  };
+
+  if (!user || !user.passwordResetOtpHash || !user.passwordResetExpiresAt) {
+    throw invalidCode();
   }
   if (user.passwordResetExpiresAt.getTime() < Date.now()) {
-    user.passwordResetTokenHash = null;
-    user.passwordResetExpiresAt = null;
-    await user.save();
-    throw invalidToken();
+    await clearCode(user);
+    throw invalidCode();
   }
-  if (!safeEqualHex(hashResetToken(token), user.passwordResetTokenHash)) {
-    throw invalidToken();
+
+  // A 6-digit code is guessable in a way the 32-byte token this replaced was
+  // not, so every wrong guess is counted and the code is discarded once the
+  // budget is gone. The counter is persisted before the comparison result is
+  // returned, so an attacker cannot avoid it by abandoning the connection.
+  if (user.passwordResetOtpAttempts >= RESET_OTP_MAX_ATTEMPTS) {
+    await clearCode(user);
+    throw invalidCode();
+  }
+
+  if (!(await verifyOtp(otp, user.passwordResetOtpHash))) {
+    user.passwordResetOtpAttempts += 1;
+    const spent = user.passwordResetOtpAttempts >= RESET_OTP_MAX_ATTEMPTS;
+    if (spent) {
+      await clearCode(user);
+    } else {
+      await user.save();
+    }
+    throw invalidCode();
   }
 
   assertPasswordStrength(password, { email: user.email, name: user.name });
@@ -387,8 +412,9 @@ const resetPassword = asyncHandler(async (req, res) => {
   }
 
   user.password = password;              // pre-save hook hashes + bumps tokenVersion
-  user.passwordResetTokenHash = null;    // single use
+  user.passwordResetOtpHash = null;      // single use
   user.passwordResetExpiresAt = null;
+  user.passwordResetOtpAttempts = 0;
   user.failedLoginAttempts = 0;          // a successful reset clears the lock
   user.lockUntil = null;
   // Completing an emailed reset proves control of the address.

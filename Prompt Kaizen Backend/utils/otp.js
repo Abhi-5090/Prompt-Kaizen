@@ -4,10 +4,17 @@ const bcrypt = require('bcryptjs');
 const OTP_TTL_MINUTES = Number(process.env.OTP_TTL_MINUTES) || 2;
 const OTP_MAX_ATTEMPTS = 5;
 
-// Password-reset links live longer than a login OTP — the user has to leave
+// Password-reset codes live longer than a login OTP — the user has to leave
 // the app, open a mail client and come back — but not so long that a leaked
-// mailbox stays exploitable.
-const RESET_TTL_MINUTES = Number(process.env.RESET_TTL_MINUTES) || 30;
+// mailbox stays exploitable. Shorter than the 30 minutes the old emailed
+// link used: a link carried 32 random bytes and could not be guessed, while
+// a 6-digit code has a million possibilities, so its window must be small.
+const RESET_TTL_MINUTES = Number(process.env.RESET_TTL_MINUTES) || 10;
+
+// Wrong guesses allowed against a single reset code before it is thrown away.
+// With this cap, the email rate limit (5 requests per 15 minutes) bounds an
+// attacker to 25 guesses per quarter hour against a 1-in-1,000,000 code.
+const RESET_OTP_MAX_ATTEMPTS = 5;
 
 /**
  * Generate a uniformly-distributed 6-digit OTP as a string. Uses crypto
@@ -33,34 +40,15 @@ function otpExpiry() {
 }
 
 /**
- * Password-reset token: 32 random bytes, URL-safe. Unlike the 6-digit OTP
- * this has enough entropy that it needs no attempt counter — but it is only
- * ever stored as a SHA-256 digest, so a database read does not yield a
- * usable link. SHA-256 rather than bcrypt is correct here: the token is
- * already high-entropy, so there is nothing to brute-force, and the digest
- * must be deterministic to be looked up.
+ * Expiry stamp for a password-reset code.
+ *
+ * The reset path deliberately reuses generateOtp/hashOtp/verifyOtp above
+ * rather than carrying its own crypto. Those already produce a uniformly
+ * distributed 6-digit code from crypto.randomInt and store only a bcrypt
+ * hash, so a database read yields nothing usable.
  */
-function generateResetToken() {
-  const token = crypto.randomBytes(32).toString('base64url');
-  return { token, hash: hashResetToken(token) };
-}
-
-function hashResetToken(token) {
-  return crypto.createHash('sha256').update(String(token)).digest('hex');
-}
-
 function resetExpiry() {
   return new Date(Date.now() + RESET_TTL_MINUTES * 60_000);
-}
-
-/** Constant-time comparison for two hex digests of equal length. */
-function safeEqualHex(a, b) {
-  if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false;
-  try {
-    return crypto.timingSafeEqual(Buffer.from(a, 'hex'), Buffer.from(b, 'hex'));
-  } catch {
-    return false;
-  }
 }
 
 module.exports = {
@@ -70,9 +58,7 @@ module.exports = {
   otpExpiry,
   OTP_TTL_MINUTES,
   OTP_MAX_ATTEMPTS,
-  generateResetToken,
-  hashResetToken,
   resetExpiry,
-  safeEqualHex,
   RESET_TTL_MINUTES,
+  RESET_OTP_MAX_ATTEMPTS,
 };

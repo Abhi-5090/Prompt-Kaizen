@@ -36,7 +36,7 @@ cd "../Prompt Kaizen Frontend" && npm install && npm run dev   # :5173
 cd "../Prompt Kaizen Admin" && npm install && npm run dev      # :5174
 ```
 
-> **Email is not required to develop locally.** With `EMAIL_USER`/`EMAIL_PASSWORD` unset and `NODE_ENV` not `production`, verification codes and reset links are printed to the server console instead of being emailed, so the whole signup flow is testable. This fallback is gated on `NODE_ENV` and cannot be enabled in production.
+> **Email is not required to develop locally.** With `EMAIL_USER`/`EMAIL_PASSWORD` unset and `NODE_ENV` not `production`, verification codes and password-reset codes are printed to the server console instead of being emailed, so the whole signup flow is testable. This fallback is gated on `NODE_ENV` and cannot be enabled in production.
 
 > On macOS, port 5000 is used by AirPlay Receiver. Either turn it off (System Settings → General → AirDrop & Handoff) or set `PORT=5001`.
 
@@ -203,7 +203,7 @@ deepened `#C2470F`; brand *fills* keep the exact brand colour.
 ## 9. Conventions
 
 - User app stores `pk_token`/`pk_user`; admin app uses `pk_admin_token`/`pk_admin_user`, so both can be open at once.
-- Passwords are bcrypt (10 rounds); `password`, `otpHash` and `passwordResetTokenHash` are `select: false` and stripped from JSON.
+- Passwords are bcrypt (10 rounds); `password`, `otpHash` and `passwordResetOtpHash` are `select: false` and stripped from JSON.
 - Changing a password increments `tokenVersion`, immediately invalidating every existing JWT for that user.
 - Validation runs in middleware before controllers. Unlisted fields are dropped, which is what stops both NoSQL-operator injection and mass assignment.
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Loader2, Send, ArrowLeft, MailCheck } from 'lucide-react';
+import { Mail, Loader2, Send, ArrowLeft, MailCheck, KeyRound } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { errorMessage } from '../api/axiosInstance.js';
 import AuthShell from '../components/AuthShell.jsx';
@@ -10,6 +10,9 @@ export default function ForgotPassword() {
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
   const [notice, setNotice] = useState(null);
+  // The server owns the code's lifetime (RESET_TTL_MINUTES). Echoing what it
+  // reports keeps this copy from quietly lying when that value is changed.
+  const [ttl, setTtl] = useState(null);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -21,8 +24,9 @@ export default function ForgotPassword() {
       // this screen must not imply anything either way.
       setSent(true);
       setNotice(data?.delivery?.message || null);
+      setTtl(Number(data?.ttlMinutes) || null);
     } catch (err) {
-      toast.error(errorMessage(err, 'Could not send the reset link.'));
+      toast.error(errorMessage(err, 'Could not send the reset code.'));
     } finally {
       setSubmitting(false);
     }
@@ -31,8 +35,8 @@ export default function ForgotPassword() {
   return (
     <AuthShell
       title="Forgotten your password?"
-      subtitle="Enter the email you signed up with and we'll send you a link to choose a new one."
-      bullets={['Links expire after 30 minutes', 'Each link works only once', 'All other sessions are signed out']}
+      subtitle="Enter the email on your account and we'll send you a code to choose a new password."
+      bullets={['Codes expire quickly', 'Each code works only once', 'All other sessions are signed out']}
     >
       {sent ? (
         <div className="card p-8 text-center">
@@ -42,21 +46,29 @@ export default function ForgotPassword() {
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">Check your inbox</h1>
           <p className="mt-2 text-sm text-brand-text leading-relaxed">
             If an account exists for <span className="font-semibold text-ink">{email.trim()}</span>,
-            a reset link is on its way. It expires in 30 minutes.
+            a 6-digit reset code is on its way.{ttl ? ` It expires in ${ttl} minutes.` : ''}
           </p>
           {notice && (
             <p className="mt-3 text-xs text-ink-soft bg-surface-sunken border border-line rounded-xl p-3">
               {notice}
             </p>
           )}
-          <Link to="/login" className="btn-ghost w-full mt-6">
+          {/* The code is useless without this screen, so carry the address
+              across rather than making the user retype it. */}
+          <Link
+            to={`/reset-password?email=${encodeURIComponent(email.trim())}`}
+            className="btn-primary w-full mt-6"
+          >
+            <KeyRound className="w-4 h-4" /> Enter my code
+          </Link>
+          <Link to="/login" className="btn-ghost w-full mt-3">
             <ArrowLeft className="w-4 h-4" /> Back to sign in
           </Link>
         </div>
       ) : (
         <form onSubmit={onSubmit} className="card p-8">
           <h1 className="text-2xl font-bold tracking-tight text-ink">Reset your password</h1>
-          <p className="mt-1.5 text-sm text-brand-text">We'll email you a secure link.</p>
+          <p className="mt-1.5 text-sm text-brand-text">We'll email you a 6-digit code.</p>
 
           <div className="mt-6">
             <label htmlFor="email" className="label">Email address</label>
@@ -79,7 +91,7 @@ export default function ForgotPassword() {
           <button type="submit" className="btn-primary w-full mt-6" disabled={submitting}>
             {submitting
               ? <><Loader2 className="w-4 h-4 animate-spin-slow" /> Sending…</>
-              : <><Send className="w-4 h-4" /> Send reset link</>}
+              : <><Send className="w-4 h-4" /> Send reset code</>}
           </button>
 
           <Link to="/login" className="mt-4 inline-flex items-center gap-1.5 text-sm text-brand-text hover:text-ink transition">

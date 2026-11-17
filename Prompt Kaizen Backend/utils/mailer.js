@@ -322,17 +322,27 @@ async function sendOtpEmail({ to, name, otp, ttlMinutes }) {
 }
 
 /**
- * Password-reset link. The URL points at the user-facing SPA, which reads the
- * token from the query string and posts it to /api/auth/reset-password.
+ * Password-reset code. The 6-digit code appears only in this email — the
+ * server stores just its bcrypt hash — so this message is the single copy
+ * of a working code.
  *
- * The token appears only in this email — the server stores just its SHA-256
- * digest — so this message is the single copy of a working link.
+ * Deliberately a code rather than a link: access to this product is granted
+ * by an administrator, and the people using it open mail on phones where a
+ * link into a different browser profile loses the session. A typed code
+ * works the same everywhere. It is also why the code's lifetime is short and
+ * its guesses are capped — see utils/otp.js.
  */
-async function sendPasswordResetEmail({ to, name, resetUrl, ttlMinutes }) {
+async function sendPasswordResetOtpEmail({ to, name, otp, ttlMinutes }) {
   const t = getTransporter();
   if (!t) {
+    // Development convenience: with no SMTP configured, print the code so the
+    // reset flow can be exercised end-to-end locally. Never in production —
+    // see allowConsoleFallback().
     if (allowConsoleFallback()) {
-      console.log(`\n[mailer:dev] ── password reset link for ${to}:\n${resetUrl}\n──\n`);
+      console.log(
+        `\n[mailer:dev] ── password reset code for ${to}: ${otp} ` +
+        `(expires in ${Number(ttlMinutes) || 10} min) ──\n`
+      );
       return { devFallback: true };
     }
     const err = new Error('Email service is not configured.');
@@ -341,15 +351,17 @@ async function sendPasswordResetEmail({ to, name, resetUrl, ttlMinutes }) {
   }
 
   const safeName = esc((name || '').trim() || 'there');
-  const safeTtl = Number(ttlMinutes) || 30;
+  const safeTtl = Number(ttlMinutes) || 10;
   const year = new Date().getFullYear();
 
   const text =
     `Hi ${(name || '').trim() || 'there'},\n\n` +
     `Someone requested a password reset for your Prompt Kaizen account.\n\n` +
-    `Reset your password: ${resetUrl}\n\n` +
-    `This link expires in ${safeTtl} minutes and can only be used once.\n\n` +
+    `Your password reset code is: ${otp}\n\n` +
+    `Enter it on the reset page along with your new password. ` +
+    `This code expires in ${safeTtl} minutes and can only be used once.\n\n` +
     `If you didn't request this, ignore this email — your password will not change.\n\n` +
+    `Never share this code with anyone — Prompt Kaizen will never ask you for it.\n\n` +
     `— Prompt Kaizen\n\n` +
     `© ${year} Torii Minds LLP. All rights reserved.`;
 
@@ -359,28 +371,23 @@ async function sendPasswordResetEmail({ to, name, resetUrl, ttlMinutes }) {
       <p style="margin:0 0 12px;font-size:15px;">Hi ${safeName},</p>
       <p style="margin:0 0 18px;font-size:14px;line-height:1.55;color:#495057;">
         Someone requested a password reset for your Prompt Kaizen account.
-        Click the button below to choose a new one.
+        Enter the code below on the reset page to choose a new password.
       </p>
-      <div style="text-align:center;margin:24px 0;">
-        <a href="${esc(resetUrl)}"
-           style="display:inline-block;background:#F15D23;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:13px 28px;border-radius:12px;">
-          Reset my password
-        </a>
+      <div style="background:#fff7f3;border:1px dashed #F15D23;border-radius:14px;padding:18px;text-align:center;margin:18px 0;">
+        <div style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#212529;font-weight:600;margin-bottom:6px;">Your reset code</div>
+        <div style="font-size:34px;letter-spacing:8px;font-weight:800;color:#F15D23;font-family:'Menlo','Monaco',monospace;">${esc(otp)}</div>
       </div>
       <p style="margin:0 0 8px;font-size:13px;color:#495057;">
-        This link expires in <strong>${safeTtl} minutes</strong> and can only be used once.
-      </p>
-      <p style="margin:0 0 14px;font-size:12px;color:#6c757d;">
-        If the button doesn't work, paste this into your browser:<br/>
-        <span style="word-break:break-all;color:#495057;">${esc(resetUrl)}</span>
+        This code expires in <strong>${safeTtl} minutes</strong> and can only be used once.
       </p>
       <p style="margin:0;font-size:12px;color:#6c757d;">
         Didn't request this? Ignore this email — your password will not change.
+        Never share this code with anyone — Prompt Kaizen will never ask you for it.
       </p>`,
   });
 
   return withTimeout(
-    t.sendMail(buildMessage({ to, subject: 'Reset your Prompt Kaizen password', text, html })),
+    t.sendMail(buildMessage({ to, subject: `Your Prompt Kaizen password reset code: ${otp}`, text, html })),
     SEND_TIMEOUT_MS,
     'Password reset email send'
   ).then((info) => { noteMailSuccess(); return info; },
@@ -390,7 +397,7 @@ async function sendPasswordResetEmail({ to, name, resetUrl, ttlMinutes }) {
 module.exports = {
   getTransporter,
   sendOtpEmail,
-  sendPasswordResetEmail,
+  sendPasswordResetOtpEmail,
   verifyMailConnection,
   getMailHealth,
   allowConsoleFallback,

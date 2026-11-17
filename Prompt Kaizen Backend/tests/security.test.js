@@ -146,11 +146,16 @@ async function req(path, opts = {}) {
     r.body?.token ? bad(`${label}: A TOKEN WAS ISSUED`) : ok(`${label}: no token issued`);
   }
 
-  console.log('=== Password reset token is hashed at rest ===');
+  console.log('=== Password reset code is hashed at rest ===');
   const withReset = await Users.findOne({ email:'mallory@example.com' });
-  withReset?.passwordResetTokenHash && /^[a-f0-9]{64}$/.test(withReset.passwordResetTokenHash)
-    ? ok('reset token stored as SHA-256 digest, not plaintext')
-    : bad('reset token not hashed', String(withReset?.passwordResetTokenHash).slice(0,40));
+  // bcrypt digest, same as the email-verification OTP. The plaintext code is
+  // six digits, so a database read must not yield something directly usable.
+  withReset?.passwordResetOtpHash && /^\$2[aby]\$\d{2}\$/.test(withReset.passwordResetOtpHash)
+    ? ok('reset code stored as a bcrypt hash, not plaintext')
+    : bad('reset code not hashed', String(withReset?.passwordResetOtpHash).slice(0,40));
+  /^\d{6}$/.test(String(withReset?.passwordResetOtpHash))
+    ? bad('reset code stored in plaintext')
+    : ok('reset code is not the raw 6 digits');
 
   console.log('=== Auth + invalid ObjectId ===');
   r = await req('/auth/login', { method:'POST', body: JSON.stringify(mallory) });
@@ -234,7 +239,7 @@ async function req(path, opts = {}) {
   console.log('=== Secrets never serialised ===');
   r = await req('/auth/me', { headers: auth });
   const leaked = JSON.stringify(r.body || {});
-  /password|otpHash|passwordResetTokenHash/i.test(leaked)
+  /password|otpHash|passwordResetOtpHash/i.test(leaked)
     ? bad('response leaks a secret field', leaked.slice(0,200))
     : ok('no password/otp/reset fields in any user payload');
 

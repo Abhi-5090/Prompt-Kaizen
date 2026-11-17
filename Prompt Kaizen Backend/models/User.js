@@ -59,11 +59,20 @@ const userSchema = new mongoose.Schema(
     failedLoginAttempts: { type: Number, default: 0 },
     lockUntil:           { type: Date, default: null },
 
-    // Password reset. Only the SHA-256 hash of the token is stored, so a
-    // database leak does not hand over working reset links. Single-use:
-    // cleared the moment a reset succeeds.
-    passwordResetTokenHash: { type: String, select: false, default: null },
-    passwordResetExpiresAt: { type: Date, default: null },
+    // Password reset by emailed 6-digit code. Only the bcrypt hash of the
+    // code is stored, so a database leak does not hand over working resets.
+    // Single-use: cleared the moment a reset succeeds.
+    //
+    // Kept separate from the otpHash/otpExpiresAt fields above even though
+    // both hold a 6-digit code. Sharing one slot would mean a password-reset
+    // request silently invalidated a pending email verification (and the
+    // reverse), and a code issued for one purpose would be accepted for the
+    // other.
+    passwordResetOtpHash:     { type: String, select: false, default: null },
+    passwordResetExpiresAt:   { type: Date, default: null },
+    // Wrong guesses against the current reset code. A 6-digit code needs an
+    // attempt cap; the 32-byte token this replaced did not.
+    passwordResetOtpAttempts: { type: Number, default: 0 },
 
     // True while the account is still on the password an administrator set.
     // Access is granted by an operator who necessarily knows that password, so
@@ -107,7 +116,7 @@ userSchema.methods.toJSON = function () {
   const obj = this.toObject();
   delete obj.password;
   delete obj.otpHash;
-  delete obj.passwordResetTokenHash;
+  delete obj.passwordResetOtpHash;
   return obj;
 };
 
